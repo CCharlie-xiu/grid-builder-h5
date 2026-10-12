@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Grid Floor Builder</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for camera manipulation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- 本地样式 -->
+    <link rel="stylesheet" href="./css/base.css">
+    <link rel="stylesheet" href="./css/components.css">
+</head>
+<body class="bg-slate-950 text-slate-100">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
+        <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 pointer-events-auto shadow-2xl">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-cube"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide">3D 网格建造工作坊</h1>
+                <p class="text-xs text-slate-400">点击格子放置物品，支持自由视角旋转与编辑</p>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 pointer-events-auto shadow-2xl">
+            <button id="btn-save-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> 保存场景
+            </button>
+            <button id="btn-load-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> 载入场景
+            </button>
+            <button id="btn-clear" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> 清空场景
+            </button>
+            <button id="btn-reset-cam" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-video"></i> 重置视角
+            </button>
+        </div>
+    </header>
+
+    <!-- 左侧面板列：镜头设置 + 路线游览 -->
+    <div class="absolute left-6 bottom-6 z-10 flex flex-col gap-2 w-60">
+
+        <!-- 镜头设置面板 -->
+        <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
+            <button id="btn-cam-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-400/30 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-video text-violet-300 text-xs"></i>
+                </span>
+                <span class="text-sm font-bold text-slate-100">镜头设置</span>
+                <span id="cam-mode-badge" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-400/20 leading-tight">标准漫游</span>
+                <i id="cam-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs ml-auto transition-transform"></i>
+            </button>
+            <div id="cam-body" class="px-4 pb-4 space-y-3">
+                <!-- 默认镜头模式 -->
+                <div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">默认镜头模式</div>
+                    <div id="cam-modes" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <!-- 参数（单位：格） -->
+                <div class="space-y-1.5">
+                    <div class="cam-slider-row">
+                        <span class="cam-slider-label">高度</span>
+                        <input id="cam-height" type="range" min="0.5" max="12" step="0.1" value="2.5" class="cam-slider">
+                        <span id="cam-height-val" class="cam-slider-value">2.5格</span>
+                    </div>
+                    <div class="cam-slider-row">
+                        <span class="cam-slider-label">后跟</span>
+                        <input id="cam-distance" type="range" min="0" max="10" step="0.1" value="2.5" class="cam-slider">
+                        <span id="cam-distance-val" class="cam-slider-value">2.5格</span>
+                    </div>
+                    <div class="cam-slider-row">
+                        <span class="cam-slider-label">注视</span>
+                        <input id="cam-lookahead" type="range" min="0" max="12" step="0.1" value="3" class="cam-slider">
+                        <span id="cam-lookahead-val" class="cam-slider-value">3.0格</span>
+                    </div>
+                </div>
+                <!-- 途经点镜头覆盖 -->
+                <div class="border-t border-slate-700/60 pt-2.5 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">途经点镜头</span>
+                        <span id="cam-wp-status" class="text-[10px] text-slate-500">无途经点</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="cam-wp-prev" class="tour-action-btn px-2 py-1" title="上一个途经点">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        </button>
+                        <span id="cam-wp-index" class="flex-1 text-center text-xs text-slate-300">- / -</span>
+                        <button id="cam-wp-next" class="tour-action-btn px-2 py-1" title="下一个途经点">
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                    <button id="cam-preview" class="tour-action-btn w-full">
+                        <i class="fa-solid fa-eye text-[11px]"></i>预览此点镜头
+                    </button>
+                    <button id="cam-use-current" class="tour-action-btn w-full">
+                        <i class="fa-solid fa-camera text-[11px]"></i>使用当前视角保存到此点
+                    </button>
+                    <button id="cam-reset-point" class="tour-action-btn w-full">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i>恢复此点默认镜头
+                    </button>
+                </div>
+                <button id="cam-reset-global" class="tour-action-btn w-full">
+                    <i class="fa-solid fa-sliders text-[11px]"></i>恢复默认镜头设置
+                </button>
+                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none pt-0.5">
+                    <input type="checkbox" id="chk-debug" class="accent-violet-500 w-3.5 h-3.5">显示镜头调试
+                </label>
+            </div>
+        </div>
+
+        <!-- 路线游览面板 -->
+        <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
+            <button id="btn-route-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-route text-cyan-300 text-xs"></i>
+                </span>
+                <span class="text-sm font-bold text-slate-100">路线游览</span>
+                <span id="wp-count" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-400/20 leading-tight">0个途经点</span>
+                <i id="route-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs ml-auto transition-transform"></i>
+            </button>
+            <div id="route-body" class="px-4 pb-4 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-plan" class="tour-action-btn">
+                        <i class="fa-solid fa-compass text-[11px]"></i>规划路线
+                    </button>
+                    <button id="btn-wp-undo" class="tour-action-btn">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i>撤销点
+                    </button>
+                </div>
+                <button id="btn-wp-clear" class="tour-action-btn w-full">
+                    <i class="fa-solid fa-trash-can text-[11px]"></i>清空路线
+                </button>
+                <div class="flex items-center gap-2.5 pt-1">
+                    <button id="btn-tour" class="tour-primary-btn">
+                        <i class="fa-solid fa-play text-[11px]"></i>开始游览
+                    </button>
+                    <label class="flex items-center gap-1.5 text-xs text-slate-400 select-none cursor-pointer whitespace-nowrap">
+                        <input type="checkbox" id="chk-loop" class="accent-cyan-500 w-3.5 h-3.5">循环
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 镜头调试读数 -->
+    <div id="debug-panel" class="absolute top-24 right-6 glass-panel px-4 py-3 rounded-xl z-10 text-[11px] text-slate-300 space-y-1 shadow-xl hidden">
+        <div>镜头模式 <span id="dbg-mode" class="text-violet-300 font-semibold">—</span></div>
+        <div>相机位置 <span id="dbg-pos" class="text-cyan-300">—</span></div>
+        <div>注视目标 <span id="dbg-target" class="text-cyan-300">—</span></div>
+        <div>播放进度 <span id="dbg-progress" class="text-emerald-300">—</span></div>
+        <div>路线位置 <span id="dbg-point" class="text-slate-400">—</span></div>
+    </div>
+
+    <!-- 分类页签 + 物品栏（底部居中） -->
+    <footer class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-2 max-w-[calc(100vw-3rem)]">
+        <!-- 分类页签 -->
+        <div class="glass-panel rounded-full px-2 py-1 flex items-center gap-1 pointer-events-auto shadow-xl">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:block">分类</span>
+            <div id="category-tabs" class="flex items-center gap-1"></div>
+        </div>
+        <!-- 物品栏 -->
+        <div class="glass-panel rounded-2xl p-2 pointer-events-auto shadow-2xl max-w-full overflow-x-auto">
+            <div id="palette-container" class="flex items-stretch gap-1.5"></div>
+        </div>
+    </footer>
+
+    <!-- Instructions Overlay -->
+    <div class="absolute bottom-6 right-6 glass-panel px-4 py-3 rounded-xl pointer-events-none z-10 text-xs text-slate-400 space-y-1 shadow-xl hidden sm:block">
+        <p><span class="text-slate-200 font-semibold">左键拖拽</span>：旋转视角</p>
+        <p><span class="text-slate-200 font-semibold">右键拖拽</span>：平移镜头</p>
+        <p><span class="text-slate-200 font-semibold">滚轮</span>：缩放大小</p>
+        <p><span class="text-slate-200 font-semibold">点击格子</span>：放置物品</p>
+        <p><span class="text-slate-200 font-semibold">点击物品顶面</span>：向上堆叠（最高 5 层）</p>
+        <p><span class="text-slate-200 font-semibold">Shift + 点击</span>：擦除顶层物品</p>
+        <p><span class="text-slate-200 font-semibold">← / →</span>：切换物品</p>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="absolute top-24 left-1/2 -translate-x-1/2 glass-panel px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 transform -translate-y-4">
+        提示信息
+    </div>
+
+    <!-- 本地脚本（加载顺序：配置 → 场景 → 物品 → 交互 → 路线 → 相机 → 存储 → 提示 → 启动） -->
+    <script src="./js/config.js"></script>
+    <script src="./js/scene.js"></script>
+    <script src="./js/items.js"></script>
+    <script src="./js/interaction.js"></script>
+    <script src="./js/tour.js"></script>
+    <script src="./js/camera.js"></script>
+    <script src="./js/storage.js"></script>
+    <script src="./js/ui.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>

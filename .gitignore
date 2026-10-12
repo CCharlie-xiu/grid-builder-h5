@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 依赖（本项目无构建步骤，仅作兜底）
+node_modules/
+
+# 工具产物
+.playwright-cli/
+.workbuddy-ai/

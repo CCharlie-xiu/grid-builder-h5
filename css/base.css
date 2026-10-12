@@ -1,0 +1,14 @@
+/* 基础样式：页面重置、布局容器、3D 画布 */
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+}
+
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+}

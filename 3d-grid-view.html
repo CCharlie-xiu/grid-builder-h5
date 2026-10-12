@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>游戏空间 · 3D 网格视图</title>
+<style>
+  :root{
+    --cyan:#35f0ff;
+    --violet:#8b5cf6;
+    --magenta:#ff2fd6;
+    --text:#cfefff;
+    --dim:rgba(207,239,255,.55);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#04060e}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--text);cursor:crosshair}
+
+  /* ===== 3D 场景 ===== */
+  .scene{
+    position:fixed;inset:0;perspective:900px;perspective-origin:50% 42%;overflow:hidden;
+    background:
+      radial-gradient(110% 60% at 50% 36%, rgba(139,92,246,.16), transparent 62%),
+      radial-gradient(90% 55% at 50% 102%, rgba(53,240,255,.12), transparent 70%),
+      linear-gradient(180deg,#04060e 0%,#070b1c 52%,#0a1230 100%);
+  }
+  .world{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:50% 62%;will-change:transform}
+
+  .sun{position:absolute;left:50%;top:33%;width:46vmax;height:46vmax;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(255,47,214,.15) 0%,rgba(139,92,246,.09) 42%,transparent 70%)}
+  .horizon{position:absolute;left:-10%;right:-10%;top:45.5%;height:1px;opacity:.6;
+    background:linear-gradient(90deg,transparent,rgba(53,240,255,.55) 50%,transparent)}
+
+  .stars{position:absolute;inset:0;pointer-events:none;will-change:transform}
+  .stars i{position:absolute;background:#bfeaff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{opacity:.25}50%{opacity:.9}}
+
+  /* 网格地面 / 天顶 */
+  .floor,.ceil{
+    position:absolute;left:50%;top:60%;width:3400px;height:2800px;margin-left:-1700px;margin-top:-1400px;
+    background-image:
+      linear-gradient(var(--cyan) 2px,transparent 2px),
+      linear-gradient(90deg,var(--cyan) 2px,transparent 2px),
+      linear-gradient(rgba(53,240,255,.16) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(53,240,255,.16) 1px,transparent 1px);
+    background-size:500px 500px,500px 500px,100px 100px,100px 100px;
+    animation:gridScroll 2.6s linear infinite;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 40%);
+    mask-image:linear-gradient(180deg,transparent 0%,#000 40%);
+  }
+  .floor{transform:rotateX(80deg)}
+  .ceil{
+    transform:rotateX(-80deg);opacity:.16;
+    background-image:
+      linear-gradient(rgba(139,92,246,.5) 2px,transparent 2px),
+      linear-gradient(90deg,rgba(139,92,246,.5) 2px,transparent 2px),
+      linear-gradient(rgba(139,92,246,.12) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(139,92,246,.12) 1px,transparent 1px);
+    -webkit-mask-image:linear-gradient(0deg,transparent 0%,#000 40%);
+    mask-image:linear-gradient(0deg,transparent 0%,#000 40%);
+    animation-name:gridScrollR;
+  }
+  @keyframes gridScroll{to{background-position:0 100px,100px 0,0 100px,100px 0}}
+  @keyframes gridScrollR{to{background-position:0 -100px,-100px 0,0 -100px,-100px 0}}
+
+  .beams,.cells{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
+
+  /* 光柱 */
+  .beam{
+    position:absolute;left:50%;top:50%;width:2px;margin-left:-1px;
+    background:linear-gradient(to bottom,rgba(var(--rgb),0) 0%,rgba(var(--rgb),.55) 100%);
+    box-shadow:0 0 6px rgba(var(--rgb),.35);
+  }
+
+  /* 节点立方体 */
+  .cell{position:absolute;left:50%;top:50%;transform-style:preserve-3d;pointer-events:auto;cursor:pointer;
+    opacity:0;animation:fadeIn .7s ease forwards;animation-delay:var(--d,0s)}
+  .bob{transform-style:preserve-3d;animation:bob 5s ease-in-out infinite;animation-delay:var(--d,0s)}
+  .spin{transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.8,.3,1.2)}
+  .f{
+    position:absolute;left:0;top:0;width:90px;height:90px;margin:-45px 0 0 -45px;
+    border:1px solid rgba(var(--rgb),.55);
+    background:rgba(var(--rgb),.06);
+    box-shadow:0 0 14px rgba(var(--rgb),.25),inset 0 0 22px rgba(var(--rgb),.10);
+    transition:border-color .25s,background .25s;
+  }
+  .f.top::after{
+    content:attr(data-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:2px;
+    color:rgb(var(--rgb));text-shadow:0 0 8px rgba(var(--rgb),.9);
+  }
+  .core{
+    position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,rgb(var(--rgb)) 45%,rgba(var(--rgb),0) 78%);
+    animation:pulse 2.6s ease-in-out infinite;animation-delay:var(--d,0s);
+  }
+  .cell:hover .f{border-color:rgba(var(--rgb),.95);background:rgba(var(--rgb),.16)}
+  .cell.on .spin{animation:spinY 6s linear infinite}
+  .cell.on .f{border-color:rgba(var(--rgb),.95);background:rgba(var(--rgb),.2);
+    box-shadow:0 0 22px rgba(var(--rgb),.5),inset 0 0 26px rgba(var(--rgb),.25)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @keyframes spinY{to{transform:rotateY(360deg)}}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.35);opacity:.55}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+  /* 点击涟漪 */
+  .ring{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;pointer-events:none}
+  .ring i{display:block;width:100%;height:100%;border:2px solid rgba(var(--rgb),.9);border-radius:50%;
+    box-shadow:0 0 12px rgba(var(--rgb),.6);animation:ringGrow 1.1s ease-out forwards}
+  @keyframes ringGrow{from{transform:scale(.4);opacity:1}to{transform:scale(7);opacity:0}}
+
+  /* 后期效果 */
+  .scanlines{position:fixed;inset:0;pointer-events:none;z-index:40;mix-blend-mode:overlay;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px)}
+  .vignette{position:fixed;inset:0;pointer-events:none;z-index:41;
+    background:radial-gradient(115% 85% at 50% 44%,transparent 58%,rgba(2,4,10,.62) 100%)}
+
+  /* HUD */
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:50;display:flex;flex-direction:column;justify-content:space-between;padding:30px 36px}
+  .hud .row{display:flex;justify-content:space-between;align-items:flex-start}
+  .hud .row:last-child{align-items:flex-end}
+  .brand h1{font-size:34px;font-weight:800;letter-spacing:10px;
+    background:linear-gradient(92deg,#fff,var(--cyan) 45%,var(--violet));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 14px rgba(53,240,255,.35))}
+  .brand .sub{margin-top:6px;font:500 11px/1.6 ui-monospace,Menlo,Consolas,monospace;letter-spacing:4px;color:var(--dim)}
+  .brand .bar{margin-top:10px;width:220px;height:2px;background:linear-gradient(90deg,var(--cyan),transparent)}
+  .telemetry{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}
+  .telemetry .t{display:flex;gap:14px;justify-content:flex-end;padding:3px 0;color:var(--dim);letter-spacing:1px}
+  .telemetry .t b{color:var(--cyan);font-weight:600;min-width:104px;text-align:right;text-shadow:0 0 8px rgba(53,240,255,.4)}
+  .legend{display:flex;gap:18px;font-size:11px;color:var(--dim);letter-spacing:1px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:8px;height:8px;border-radius:2px;background:currentColor;box-shadow:0 0 8px currentColor}
+  .hint{font-size:12px;color:var(--dim);letter-spacing:2px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .hint b{color:var(--cyan);font-weight:600}
+
+  .corner{position:fixed;width:22px;height:22px;z-index:45;pointer-events:none;border:2px solid rgba(53,240,255,.5)}
+  .corner.tl{top:18px;left:18px;border-right:0;border-bottom:0}
+  .corner.tr{top:18px;right:18px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:18px;left:18px;border-right:0;border-top:0}
+  .corner.br{bottom:18px;right:18px;border-left:0;border-top:0}
+
+  @media (max-width:720px){
+    .hud{padding:18px 20px}
+    .brand h1{font-size:24px;letter-spacing:6px}
+    .legend{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="sun"></div>
+  <div class="horizon"></div>
+  <div class="stars" id="stars"></div>
+  <div class="world" id="world">
+    <div class="ceil"></div>
+    <div class="floor"></div>
+    <div class="beams" id="beams"></div>
+    <div class="cells" id="cells"></div>
+  </div>
+</div>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+
+<div class="hud">
+  <div class="row">
+    <div class="brand">
+      <h1>游戏空间</h1>
+      <div class="sub">GAME SPACE — 3D GRID VIEW</div>
+      <div class="bar"></div>
+    </div>
+    <div class="telemetry">
+      <div class="t"><span>POINTER</span><b id="t-coord">0000 · 0000</b></div>
+      <div class="t"><span>YAW / PITCH</span><b id="t-view">0.0° / 0.0°</b></div>
+      <div class="t"><span>NODES</span><b>12</b></div>
+      <div class="t"><span>ACTIVE</span><b id="t-active">0</b></div>
+      <div class="t"><span>FPS</span><b id="t-fps">60</b></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="legend">
+      <span style="color:#35f0ff"><i></i>活跃节点</span>
+      <span style="color:#8b5cf6"><i></i>数据节点</span>
+      <span style="color:#ff2fd6"><i></i>高危区域</span>
+      <span style="color:#34d399"><i></i>已连接</span>
+    </div>
+    <div class="hint">移动鼠标 <b>环视视角</b> · 悬停 <b>高亮</b> · 点击 <b>激活节点</b></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const world  = document.getElementById('world');
+  const cellsG = document.getElementById('cells');
+  const beamsG = document.getElementById('beams');
+  const starsG = document.getElementById('stars');
+  const tCoord = document.getElementById('t-coord');
+  const tView  = document.getElementById('t-view');
+  const tActive= document.getElementById('t-active');
+  const tFps   = document.getElementById('t-fps');
+
+  const floorY = () => window.innerHeight * 0.10;
+
+  const PALETTE = ['53,240,255', '139,92,246', '255,47,214', '52,211,153'];
+  const SPACING = 230, CUBE = 90, H = CUBE / 2;
+
+  /* 星空 */
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement('i');
+    const sz = (Math.random() * 1.8 + .6).toFixed(1);
+    s.style.cssText =
+      `left:${(Math.random()*100).toFixed(2)}%;top:${(Math.random()*100).toFixed(2)}%;` +
+      `width:${sz}px;height:${sz}px;` +
+      `animation-duration:${(2+Math.random()*4).toFixed(1)}s;animation-delay:-${(Math.random()*4).toFixed(1)}s`;
+    starsG.appendChild(s);
+  }
+
+  /* 网格坐标：|gx|+|gz|<=2，共 12 个节点 */
+  const positions = [];
+  for (let gx = -2; gx <= 2; gx++)
+    for (let gz = -2; gz <= 1; gz++)
+      if (Math.abs(gx) + Math.abs(gz) <= 2) positions.push([gx, gz]);
+
+  const beams = [];
+
+  function ripple(x, z, rgb) {
+    const r = document.createElement('div');
+    r.className = 'ring';
+    r.style.setProperty('--rgb', rgb);
+    r.style.transform = `translate3d(${x}px, ${floorY()}px, ${z}px) rotateX(80deg)`;
+    r.innerHTML = '<i></i>';
+    world.appendChild(r);
+    setTimeout(() => r.remove(), 1200);
+  }
+
+  positions.forEach(([gx, gz], i) => {
+    const rgb = PALETTE[i % PALETTE.length];
+    const x = gx * SPACING, z = gz * SPACING;
+    const y = -(170 + (i * 47) % 150);
+
+    /* 光柱 */
+    const beam = document.createElement('div');
+    beam.className = 'beam';
+    beam.style.setProperty('--rgb', rgb);
+    beam._y = y;
+    beam.style.height = (floorY() - y) + 'px';
+    beam.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+    beamsG.appendChild(beam);
+    beams.push(beam);
+
+    /* 节点立方体 */
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.style.setProperty('--rgb', rgb);
+    cell.style.setProperty('--d', (0.25 + i * 0.07).toFixed(2) + 's');
+    cell.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+    const faces = [
+      `translateZ(${H}px)`,
+      `rotateY(180deg) translateZ(${H}px)`,
+      `rotateY(90deg) translateZ(${H}px)`,
+      `rotateY(-90deg) translateZ(${H}px)`,
+      `rotateX(90deg) translateZ(${H}px)`,
+      `rotateX(-90deg) translateZ(${H}px)`
+    ].map((t, k) =>
+      `<div class="f${k === 4 ? ' top' : ''}" data-label="N-${String(i+1).padStart(2,'0')}" style="transform:${t}"></div>`
+    ).join('');
+    cell.innerHTML = `<div class="bob"><div class="spin">${faces}<div class="core"></div></div></div>`;
+    cellsG.appendChild(cell);
+
+    cell.addEventListener('click', () => {
+      cell.classList.toggle('on');
+      tActive.textContent = cellsG.querySelectorAll('.cell.on').length;
+      ripple(x, z, rgb);
+    });
+  });
+
+  /* 窗口缩放：重算光柱长度 */
+  window.addEventListener('resize', () => {
+    beams.forEach(b => { b.style.height = (floorY() - b._y) + 'px'; });
+  });
+
+  /* 鼠标视差 + 空闲缓摆 */
+  let tx = 0, ty = 0, cx = 0, cy = 0;
+  window.addEventListener('pointermove', e => {
+    tx = (e.clientX / innerWidth  - .5) * 2;
+    ty = (e.clientY / innerHeight - .5) * 2;
+    tCoord.textContent = `${String(e.clientX).padStart(4,'0')} · ${String(e.clientY).padStart(4,'0')}`;
+  });
+
+  let frames = 0, lastT = performance.now();
+  (function loop(t) {
+    frames++;
+    if (t - lastT >= 500) {
+      tFps.textContent = Math.round(frames * 1000 / (t - lastT));
+      frames = 0; lastT = t;
+    }
+    cx += (tx - cx) * .045;
+    cy += (ty - cy) * .045;
+    const yaw   = cx * 7 + Math.sin(t / 3000) * 2.5;
+    const pitch = -4 - cy * 4;
+    world.style.transform  = `rotateX(${pitch.toFixed(2)}deg) rotateY(${yaw.toFixed(2)}deg)`;
+    starsG.style.transform = `translate(${(-cx * 14).toFixed(1)}px, ${(-cy * 10).toFixed(1)}px)`;
+    tView.textContent = `${yaw.toFixed(1)}° / ${(cy * 4).toFixed(1)}°`;
+    requestAnimationFrame(loop);
+  })(performance.now());
+})();
+</script>
+
+</body>
+</html>
