@@ -66,9 +66,9 @@ let debugHelper = null, debugLine = null, debugMarker = null;
 
 function clampNum(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
-// 场景跨度自适应系数：场景越大，默认高度/距离按比例放大（限制 0.75~1.75 倍）
+// 场景跨度自适应系数：场景越大，默认高度/距离按比例放大（限制 0.75~2.0 倍）
 function sceneScaleFactor() {
-    return clampNum(gridSize / BASE_SCENE_TILES, 0.75, 1.75);
+    return clampNum(gridSize / BASE_SCENE_TILES, 0.75, 2.0);
 }
 
 // 模式基准参数（含尺度自适应）
@@ -603,15 +603,9 @@ function selectWaypoint(index) {
 }
 
 // —— 面板事件绑定 ——
+// 折叠开关（btn-cam-collapse / cam-body / cam-chevron）统一由 ui.js 的 bindCollapsePanel 绑定
 (function bindCameraPanel() {
     buildCameraModeChips();
-
-    document.getElementById('btn-cam-collapse').addEventListener('click', () => {
-        const body = document.getElementById('cam-body');
-        const chevron = document.getElementById('cam-chevron');
-        const collapsed = body.classList.toggle('hidden');
-        chevron.style.transform = collapsed ? 'rotate(-90deg)' : '';
-    });
 
     const slider = (id, key) => {
         const el = document.getElementById(id);

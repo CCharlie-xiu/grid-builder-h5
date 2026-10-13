@@ -5,7 +5,7 @@
  * {
  *   version: 2,
  *   scene: { gridSize, tileSize },
- *   items: [{ key, toolId, x, y, z }],
+ *   items: [{ key, toolId, x, y, z, rot }],   // rot 为朝向（弧度），可选
  *   waypoints: [{ x, y, z, key, camera? }],   // camera 可选，缺失即继承全局默认
  *   cameraConfig: { mode, heightTiles, distanceTiles, lookAheadTiles }
  * }
@@ -26,7 +26,8 @@ function serializeScene() {
                 toolId: item.userData.toolId || null,
                 x: round4(item.position.x),
                 y: round4(item.position.y),
-                z: round4(item.position.z)
+                z: round4(item.position.z),
+                rot: round4(item.rotation.y || 0)
             });
         });
     });
@@ -89,6 +90,7 @@ function normalizeCameraConfig(raw) {
 
 // —— 内部：清空当前场景数据（不弹确认、不清镜头配置） ——
 function clearItemsSilently() {
+    if (typeof clearSelection === 'function') clearSelection();
     placedItems.forEach(col => col.forEach(mesh => scene.remove(mesh)));
     placedItems.clear();
 }
@@ -134,6 +136,10 @@ function applySceneData(data) {
             baseY,
             typeof entry.z === 'number' ? entry.z : 0
         );
+        // 朝向（旧数据无 rot 字段 → 保持默认 0）
+        if (typeof entry.rot === 'number' && isFinite(entry.rot)) {
+            mesh.rotation.y = entry.rot;
+        }
         const key = entry.key || `${Math.round(mesh.position.x)},${Math.round(mesh.position.z)}`;
         mesh.userData.colKey = key;
         mesh.userData.toolId = tool.id;

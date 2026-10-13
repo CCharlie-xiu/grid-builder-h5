@@ -21,39 +21,8 @@
     <!-- 3D Canvas Container -->
     <div id="canvas-container"></div>
 
-    <!-- Top Navigation Bar -->
-    <header class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
-        <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 pointer-events-auto shadow-2xl">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
-                <i class="fa-solid fa-cube"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight tracking-wide">3D 网格建造工作坊</h1>
-                <p class="text-xs text-slate-400">点击格子放置物品，支持自由视角旋转与编辑</p>
-            </div>
-        </div>
-
-        <!-- Global Action Buttons -->
-        <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 pointer-events-auto shadow-2xl">
-            <button id="btn-save-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
-                <i class="fa-solid fa-floppy-disk"></i> 保存场景
-            </button>
-            <button id="btn-load-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
-                <i class="fa-solid fa-folder-open"></i> 载入场景
-            </button>
-            <button id="btn-clear" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
-                <i class="fa-solid fa-trash-can"></i> 清空场景
-            </button>
-            <button id="btn-reset-cam" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
-                <i class="fa-solid fa-video"></i> 重置视角
-            </button>
-        </div>
-    </header>
-
-    <!-- 左侧面板列：镜头设置 + 路线游览 -->
-    <div class="absolute left-6 bottom-6 z-10 flex flex-col gap-2 w-60">
-
-        <!-- 镜头设置面板 -->
+    <!-- 左上：镜头设置（默认折叠） -->
+    <div class="absolute top-6 left-6 z-20 w-60">
         <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
             <button id="btn-cam-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
                 <span class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-400/30 flex items-center justify-center shrink-0">
@@ -61,9 +30,9 @@
                 </span>
                 <span class="text-sm font-bold text-slate-100">镜头设置</span>
                 <span id="cam-mode-badge" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-400/20 leading-tight">标准漫游</span>
-                <i id="cam-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs ml-auto transition-transform"></i>
+                <i id="cam-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs ml-auto transition-transform" style="transform: rotate(-90deg)"></i>
             </button>
-            <div id="cam-body" class="px-4 pb-4 space-y-3">
+            <div id="cam-body" class="hidden px-4 pb-4 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto">
                 <!-- 默认镜头模式 -->
                 <div>
                     <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">默认镜头模式</div>
@@ -120,7 +89,28 @@
                 </label>
             </div>
         </div>
+    </div>
 
+    <!-- 右上：全局操作 -->
+    <div class="absolute top-6 right-6 z-10">
+        <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 pointer-events-auto shadow-2xl">
+            <button id="btn-save-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> 保存场景
+            </button>
+            <button id="btn-load-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> 载入场景
+            </button>
+            <button id="btn-clear" class="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> 清空场景
+            </button>
+            <button id="btn-reset-cam" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-video"></i> 重置视角
+            </button>
+        </div>
+    </div>
+
+    <!-- 左下：路线游览（上移，避开底部物品栏） -->
+    <div class="absolute left-6 bottom-36 z-10 w-60">
         <!-- 路线游览面板 -->
         <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
             <button id="btn-route-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
@@ -164,6 +154,32 @@
         <div>路线位置 <span id="dbg-point" class="text-slate-400">—</span></div>
     </div>
 
+    <!-- 选中物体操作条（选择工具下点击已放置物体出现） -->
+    <div id="selection-bar" class="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 hidden">
+        <div class="glass-panel rounded-2xl px-3 py-2 flex items-center gap-2 shadow-2xl">
+            <span class="flex items-center gap-2 pr-2.5 border-r border-white/10">
+                <i class="fa-solid fa-arrow-pointer text-amber-300 text-xs"></i>
+                <span id="sel-name" class="text-xs font-bold text-slate-100 whitespace-nowrap">—</span>
+                <span id="sel-angle" class="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-400/20 leading-tight">0°</span>
+            </span>
+            <button id="sel-rot-ccw" class="sel-btn" title="逆时针旋转 90°">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button id="sel-rot-cw" class="sel-btn" title="顺时针旋转 90°">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button id="sel-move" class="sel-btn" title="移动到其他格子">
+                <i class="fa-solid fa-up-down-left-right"></i>移动
+            </button>
+            <button id="sel-remove" class="sel-btn sel-btn-danger" title="移除该物体">
+                <i class="fa-solid fa-trash-can"></i>移除
+            </button>
+            <button id="sel-cancel" class="sel-btn" title="取消选择（Esc）">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- 分类页签 + 物品栏（底部居中） -->
     <footer class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-2 max-w-[calc(100vw-3rem)]">
         <!-- 分类页签 -->
@@ -171,21 +187,40 @@
             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:block">分类</span>
             <div id="category-tabs" class="flex items-center gap-1"></div>
         </div>
-        <!-- 物品栏 -->
-        <div class="glass-panel rounded-2xl p-2 pointer-events-auto shadow-2xl max-w-full overflow-x-auto">
-            <div id="palette-container" class="flex items-stretch gap-1.5"></div>
+        <!-- 物品栏：左右按钮翻页，隐藏原生滚动条 -->
+        <div class="glass-panel rounded-2xl p-2 pointer-events-auto shadow-2xl flex items-center gap-2">
+            <button id="palette-prev" class="palette-nav-btn" title="上一页">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div id="palette-viewport" class="palette-viewport">
+                <div id="palette-container" class="flex items-stretch gap-1.5 w-max"></div>
+            </div>
+            <button id="palette-next" class="palette-nav-btn" title="下一页">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
     </footer>
 
-    <!-- Instructions Overlay -->
-    <div class="absolute bottom-6 right-6 glass-panel px-4 py-3 rounded-xl pointer-events-none z-10 text-xs text-slate-400 space-y-1 shadow-xl hidden sm:block">
-        <p><span class="text-slate-200 font-semibold">左键拖拽</span>：旋转视角</p>
-        <p><span class="text-slate-200 font-semibold">右键拖拽</span>：平移镜头</p>
-        <p><span class="text-slate-200 font-semibold">滚轮</span>：缩放大小</p>
-        <p><span class="text-slate-200 font-semibold">点击格子</span>：放置物品</p>
-        <p><span class="text-slate-200 font-semibold">点击物品顶面</span>：向上堆叠（最高 5 层）</p>
-        <p><span class="text-slate-200 font-semibold">Shift + 点击</span>：擦除顶层物品</p>
-        <p><span class="text-slate-200 font-semibold">← / →</span>：切换物品</p>
+    <!-- 右下：操作说明（默认折叠；上移到物品栏之上，避免遮挡） -->
+    <div class="absolute bottom-36 right-6 z-10 w-52 hidden sm:block">
+        <div class="glass-panel rounded-xl pointer-events-auto shadow-xl overflow-hidden">
+            <button id="btn-hint-collapse" class="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/5 transition-colors">
+                <span class="w-6 h-6 rounded-lg bg-slate-500/15 border border-slate-400/25 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-circle-info text-slate-300 text-[11px]"></i>
+                </span>
+                <span class="text-xs font-bold text-slate-200">操作说明</span>
+                <i id="hint-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs ml-auto transition-transform" style="transform: rotate(-90deg)"></i>
+            </button>
+            <div id="hint-body" class="hidden px-4 pb-3 text-xs text-slate-400 space-y-1 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                <p><span class="text-slate-200 font-semibold">左键拖拽</span>：旋转视角</p>
+                <p><span class="text-slate-200 font-semibold">右键拖拽</span>：平移镜头</p>
+                <p><span class="text-slate-200 font-semibold">滚轮</span>：缩放大小</p>
+                <p><span class="text-slate-200 font-semibold">点击格子</span>：放置物品</p>
+                <p><span class="text-slate-200 font-semibold">点击物品顶面</span>：向上堆叠（最高 5 层）</p>
+                <p><span class="text-slate-200 font-semibold">Shift + 点击</span>：擦除顶层物品</p>
+                <p><span class="text-slate-200 font-semibold">← / →</span>：切换物品</p>
+            </div>
+        </div>
     </div>
 
     <!-- Notification Toast -->
@@ -193,10 +228,12 @@
         提示信息
     </div>
 
-    <!-- 本地脚本（加载顺序：配置 → 场景 → 物品 → 交互 → 路线 → 相机 → 存储 → 提示 → 启动） -->
+    <!-- 本地脚本（加载顺序：配置 → 天空 → 场景 → 物品 → 扩展物品 → 交互 → 路线 → 相机 → 存储 → 提示 → 启动） -->
     <script src="./js/config.js"></script>
+    <script src="./js/sky.js"></script>
     <script src="./js/scene.js"></script>
     <script src="./js/items.js"></script>
+    <script src="./js/items-extra.js"></script>
     <script src="./js/interaction.js"></script>
     <script src="./js/tour.js"></script>
     <script src="./js/camera.js"></script>

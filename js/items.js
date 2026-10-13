@@ -2,16 +2,25 @@
  * items.js — 物品工厂与鼠标跟随的半透明预览模型
  * createItemMesh / updatePreviewMesh / animatePopIn
  * 约定：每个物品 Group 的底面位于局部 y=0，并在 userData.itemHeight 记录总高度（供上层堆叠计算）
+ *
+ * 建模分发：先查 items-extra.js 注册的 ITEM_BUILDERS（建筑/地标/家具/城市配套），
+ * 未命中再走下方的基础物品分支（地形/方块/树/晶体/座椅/车/红绿灯）。
  */
 
 let previewMesh = null;
 
-// 按工具定义创建一个物品 Group（橡皮擦返回 null）
+// 按工具定义创建一个物品 Group（橡皮擦 / 选择返回 null）
 function createItemMesh(tool) {
     const group = new THREE.Group();
 
     if (tool.type === 'eraser' || tool.type === 'select') {
         return null; // 工具类不生成实体
+    }
+
+    // —— 扩展物品（items-extra.js）——
+    if (typeof ITEM_BUILDERS !== 'undefined' && ITEM_BUILDERS[tool.id]) {
+        ITEM_BUILDERS[tool.id](group, tool);
+        return group;
     }
 
     if (tool.id === 'road_straight' || tool.id === 'road_curve' || tool.id === 'road_cross') {

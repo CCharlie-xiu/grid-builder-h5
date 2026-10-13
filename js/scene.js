@@ -1,12 +1,13 @@
 /**
  * scene.js — 3D 场景核心
  * 渲染器 / 相机 / 控制器 / 灯光 / 地面网格 / 动画循环
+ * 天空 / 雾 / 远景地面 / 天际线由 sky.js 提供，统一通过 initSky() 挂载
  */
 
 // Three.js core variables
 let scene, camera, renderer, controls;
 let gridHelper, raycaster, mouse;
-const gridSize = 20; // 20x20 grid
+const gridSize = 40; // 40x40 grid（版图 80x80 世界单位）
 const tileSize = 2; // Each tile is 2x2 units
 let plane; // Invisible raycast plane
 // Key: "x,z", Value: 该格子已放置物品数组（栈结构，索引 0 为最底层）
@@ -17,11 +18,12 @@ function init() {
     const container = document.getElementById('canvas-container');
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020617);
-    scene.fog = new THREE.FogExp2(0x020617, 0.015);
 
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(25, 25, 30);
+    // 天空 / 大气雾 / 远景地面 / 天际线（sky.js）
+    initSky();
+
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1500);
+    camera.position.set(80, 34, 108);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -36,22 +38,25 @@ function init() {
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
     controls.minDistance = 5;
-    controls.maxDistance = 80;
+    controls.maxDistance = 170;
     controls.target.set(0, 0, 0);
 
-    // 环境光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // 环境光 + 半球光（天空色 → 地面色的自然反弹）
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
     scene.add(ambientLight);
 
-    // 平行光（投射阴影）
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(30, 40, 20);
+    const hemiLight = new THREE.HemisphereLight(SKY.hemiSky, SKY.hemiGround, 0.65);
+    scene.add(hemiLight);
+
+    // 平行光（投射阴影）——太阳角度抬高，缩短阴影、贴近晴天观感
+    const dirLight = new THREE.DirectionalLight(SKY.sun, 1.0);
+    dirLight.position.set(50, 110, 35);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 90; // 收紧阴影深度范围，减少远处阴影抖动
-    const d = 30;
+    dirLight.shadow.camera.far = 220; // 收紧阴影深度范围，减少远处阴影抖动
+    const d = 52;                     // 覆盖放大后的版图
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
@@ -61,8 +66,8 @@ function init() {
     scene.add(dirLight);
 
     // 顶部冷色补光
-    const pointLight = new THREE.PointLight(0x3b82f6, 1, 50);
-    pointLight.position.set(0, 15, 0);
+    const pointLight = new THREE.PointLight(0x3b82f6, 1, 90);
+    pointLight.position.set(0, 30, 0);
     scene.add(pointLight);
 
     createFloorAndGrid();
@@ -108,7 +113,7 @@ function createFloorAndGrid() {
     scene.add(plane);
 
     // Visual Grid Helper with custom styling
-    gridHelper = new THREE.GridHelper(totalWidth, gridSize, 0x3b82f6, 0x1e293b);
+    gridHelper = new THREE.GridHelper(totalWidth, gridSize, 0x60a5fa, 0x334155);
     gridHelper.position.y = 0.02; // 抬高 2cm，与地板保持深度间距，避免 z-fighting 闪烁
     scene.add(gridHelper);
 
@@ -116,7 +121,7 @@ function createFloorAndGrid() {
     const baseGeo = new THREE.PlaneGeometry(totalWidth, totalWidth);
     baseGeo.rotateX(-Math.PI / 2);
     const baseMat = new THREE.MeshStandardMaterial({
-        color: 0x090d16,
+        color: 0x111a29,
         roughness: 0.8,
         metalness: 0.2,
         polygonOffset: true,          // 把地板在深度上稍微推远，让网格线/物体底面稳定压在它上面
@@ -128,10 +133,10 @@ function createFloorAndGrid() {
     scene.add(baseMesh);
 
     // Perimeter boundary frame
-    const boxGeo = new THREE.BoxGeometry(totalWidth + 0.5, 0.4, totalWidth + 0.5);
-    const boxMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const boxGeo = new THREE.BoxGeometry(totalWidth + 0.5, 0.6, totalWidth + 0.5);
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0x24334a, roughness: 0.5 });
     const borderMesh = new THREE.Mesh(boxGeo, boxMat);
-    borderMesh.position.y = -0.21; // 顶面降到 -0.01，不再与地板 y=0 共面（共面会整片闪烁）
+    borderMesh.position.y = -0.31; // 顶面降到 -0.01，不再与地板 y=0 共面（共面会整片闪烁）
     borderMesh.receiveShadow = true;
     scene.add(borderMesh);
 }
@@ -162,6 +167,9 @@ function animate() {
 
     // 镜头调试可视化与读数
     if (typeof updateCameraDebug === 'function') updateCameraDebug();
+
+    // 选中高亮呼吸闪烁
+    if (typeof updateSelectionPulse === 'function') updateSelectionPulse();
 
     // Optional subtle animation for magic crystals or lights
     placedItems.forEach(col => col.forEach(mesh => {

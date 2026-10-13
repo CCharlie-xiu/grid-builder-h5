@@ -40,6 +40,48 @@
     box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
 }
 
+/* ===== 物品栏翻页（隐藏原生滚动条，改用左右按钮） ===== */
+.palette-viewport {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: min(1320px, calc(100vw - 14rem));
+    /* 隐藏滚动条：Firefox / IE / WebKit */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.palette-viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.palette-nav-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.75);
+    color: #94a3b8;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.palette-nav-btn:hover:not(:disabled) {
+    border-color: rgba(34, 211, 238, 0.5);
+    background: rgba(6, 182, 212, 0.14);
+    color: #67e8f9;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+}
+.palette-nav-btn:active:not(:disabled) {
+    transform: scale(0.94);
+}
+.palette-nav-btn:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+}
+
 /* AI 助手按钮 */
 .assistant-btn {
     display: flex;
@@ -86,6 +128,45 @@
     background: rgba(6, 182, 212, 0.16);
     color: #67e8f9;
     box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.4);
+}
+
+/* ===== 选中物体操作条 ===== */
+.sel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.7);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.sel-btn:hover {
+    background: rgba(30, 41, 59, 0.9);
+    color: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.34);
+}
+.sel-btn.active {
+    border-color: rgba(251, 191, 36, 0.6);
+    background: rgba(251, 191, 36, 0.16);
+    color: #fde68a;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.22);
+}
+.sel-btn-danger:hover {
+    border-color: rgba(244, 63, 94, 0.5);
+    background: rgba(244, 63, 94, 0.14);
+    color: #fda4af;
+}
+.sel-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* ===== 路线游览面板 ===== */
