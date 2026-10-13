@@ -137,20 +137,22 @@ const AI_FILMS = [
     }
 ];
 
-// ============ 二、调性（机位微调 + 配景） ============
+// ============ 二、调性（机位微调 + 配景 + 场景骨架） ============
+// layout: plaza 草坪广场（生活 / 城市片）/ studio 影棚（产品片，暗调无草地）
+// sky:    与 layout 配套的天空预设
 
 const AI_TONES = [
-    { id: 'premium', label: '高级质感', icon: 'fa-gem', hMul: 0.85, dMul: 1.20,
+    { id: 'premium', label: '高级质感', icon: 'fa-gem', hMul: 0.85, dMul: 1.20, layout: 'studio', sky: 'studio',
       scenery: ['pillar', 'arch', 'light', 'cube', 'fountain'] },
-    { id: 'bright', label: '清爽明亮', icon: 'fa-sun', hMul: 1.10, dMul: 1.00,
+    { id: 'bright', label: '清爽明亮', icon: 'fa-sun', hMul: 1.10, dMul: 1.00, layout: 'plaza', sky: 'day',
       scenery: ['tree', 'flowerbed', 'bench', 'lawn', 'fountain'] },
-    { id: 'warm', label: '温暖治愈', icon: 'fa-mug-hot', hMul: 0.95, dMul: 1.05,
+    { id: 'warm', label: '温暖治愈', icon: 'fa-mug-hot', hMul: 0.95, dMul: 1.05, layout: 'plaza', sky: 'day',
       scenery: ['tree', 'bench', 'flowerbed', 'plant_pot', 'house'] },
-    { id: 'living', label: '烟火生活', icon: 'fa-store', hMul: 0.90, dMul: 1.00,
+    { id: 'living', label: '烟火生活', icon: 'fa-store', hMul: 0.90, dMul: 1.00, layout: 'plaza', sky: 'day',
       scenery: ['shop', 'bench', 'trash_bin', 'street_lamp', 'car'] },
-    { id: 'future', label: '未来科技', icon: 'fa-microchip', hMul: 1.05, dMul: 1.15,
+    { id: 'future', label: '未来科技', icon: 'fa-microchip', hMul: 1.05, dMul: 1.15, layout: 'studio', sky: 'studio',
       scenery: ['light', 'office', 'pillar', 'cube', 'billboard'] },
-    { id: 'retro', label: '复古胶片', icon: 'fa-film', hMul: 0.90, dMul: 1.15,
+    { id: 'retro', label: '复古胶片', icon: 'fa-film', hMul: 0.90, dMul: 1.15, layout: 'plaza', sky: 'dusk',
       scenery: ['clock_tower', 'arch', 'lighthouse', 'townhouse', 'street_lamp'] }
 ];
 
@@ -165,6 +167,10 @@ const AI_LENGTHS = [
 // ============ 四、关键词 → 主体与配景 ============
 
 const AI_KEYWORDS = [
+    { keys: ['手提袋', '纸袋', '购物袋', '袋子', '礼品袋', '包装盒', '礼盒'], subject: 'bag',
+      items: ['bag', 'pillar', 'arch', 'cube', 'fountain'] },
+    { keys: ['商品', '产品', '单品', '展示', '样机'], subject: 'bag',
+      items: ['bag', 'pillar', 'arch', 'cube', 'light'] },
     { keys: ['院子', '庭院', '花园', '自家', '住宅', '一家人'], subject: 'house',
       items: ['house', 'lawn', 'fence', 'tree', 'flowerbed', 'bench', 'mower'] },
     { keys: ['割草', '修剪', '除草'], subject: 'mower',
@@ -271,76 +277,97 @@ function aiComposeSpec(ui) {
         items.push(rot ? { id, grid: [gx, gz], rot } : { id, grid: [gx, gz] });
     };
 
-    // 1. 草坪广场：7×7 铺底，把中心区域填满
-    for (let dx = -3; dx <= 3; dx++) {
-        for (let dz = -3; dz <= 3; dz++) put('lawn', c + dx, c + dz);
-    }
+    // —— 场景骨架：影棚（产品片）走极简对称，广场（生活 / 城市片）走铺陈 ——
+    const layout = tone.layout || 'plaza';
+    // 影棚里没有铺开的街区，机位要按比例收近，否则主体在画面里只有指甲盖大
+    const ls = layout === 'studio' ? 0.5 : 1;    // 水平尺度
+    const hs = layout === 'studio' ? 0.7 : 1;    // 机位高度尺度
 
-    // 2. 主体压在广场中心（草坪只有 0.02 高，视觉上等于站在地上）
-    items.push({ id: subjectId, grid: [c, c] });
+    if (layout === 'studio') {
+        // 影棚：主体居中，一圈柱子 + 两圈拱门，不放草地，靠明暗对比出质感
+        items.push({ id: subjectId, grid: [c, c] });
+        items.push({ pattern: 'ring', id: 'pillar', center: [c, c], radius: 6, count: 10 });
+        items.push({ pattern: 'ring', id: 'arch', center: [c, c], radius: 11, count: 8 });
+        items.push({ pattern: 'ring', id: 'arch', center: [c, c], radius: 17, count: 12 });
+        // 少量配景点缀在柱廊之间，避免只有柱子太单调
+        const accent = pool.filter(id => id !== 'pillar' && id !== 'arch').slice(0, 3);
+        accent.forEach((id, k) => {
+            const a = (k / Math.max(1, accent.length)) * Math.PI * 2 + 0.4;
+            put(id, Math.round(c + Math.cos(a) * 8.5), Math.round(c + Math.sin(a) * 8.5));
+        });
+    } else {
+        // 1. 草坪广场：7×7 铺底，把中心区域填满
+        for (let dx = -3; dx <= 3; dx++) {
+            for (let dz = -3; dz <= 3; dz++) put('lawn', c + dx, c + dz);
+        }
 
-    // 3. 花坛环：贴着广场边，10 个，给画面一圈彩色
-    for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * Math.PI * 2 + rand() * 0.12;
-        put('flowerbed', Math.round(c + Math.cos(a) * 4.5), Math.round(c + Math.sin(a) * 4.5));
-    }
+        // 2. 主体压在广场中心（草坪只有 0.02 高，视觉上等于站在地上）
+        items.push({ id: subjectId, grid: [c, c] });
 
-    // 4. 中环：半径 6~7.5，12 件配景
-    for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2 + rand() * 0.3;
-        const r = 6 + rand() * 1.5;
-        put(pool[i % pool.length],
-            Math.round(c + Math.cos(a) * r),
-            Math.round(c + Math.sin(a) * r),
-            Math.round(rand() * 4) * 90);
-    }
+        // 3. 花坛环：贴着广场边，10 个，给画面一圈彩色
+        for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2 + rand() * 0.12;
+            put('flowerbed', Math.round(c + Math.cos(a) * 4.5), Math.round(c + Math.sin(a) * 4.5));
+        }
 
-    // 5. 外环：半径 9~11.5，14 件配景，把远处也填上
-    for (let i = 0; i < 14; i++) {
-        const a = (i / 14) * Math.PI * 2 + 0.26 + rand() * 0.3;
-        const r = 9 + rand() * 2.5;
-        put(pool[(i + 3) % pool.length],
-            Math.round(c + Math.cos(a) * r),
-            Math.round(c + Math.sin(a) * r),
-            Math.round(rand() * 4) * 90);
-    }
+        // 4. 中环：半径 6~7.5，12 件配景
+        for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * Math.PI * 2 + rand() * 0.3;
+            const r = 6 + rand() * 1.5;
+            put(pool[i % pool.length],
+                Math.round(c + Math.cos(a) * r),
+                Math.round(c + Math.sin(a) * r),
+                Math.round(rand() * 4) * 90);
+        }
 
-    // 6. 外圈远景：半径 13~17，18 件「看得见」的高个子，撑住中景与远景
-    const tall = ['tree', 'street_lamp', 'billboard', 'apartment', 'office', 'bus_stop', 'traffic_light', 'car']
-        .filter(id => id !== subjectId);
-    for (let i = 0; i < 18; i++) {
-        const a = (i / 18) * Math.PI * 2 + 0.13 + rand() * 0.25;
-        const r = 13 + rand() * 4;
-        put(tall[i % tall.length],
-            Math.round(c + Math.cos(a) * r),
-            Math.round(c + Math.sin(a) * r),
-            Math.round(rand() * 4) * 90);
-    }
+        // 5. 外环：半径 9~11.5，14 件配景，把远处也填上
+        for (let i = 0; i < 14; i++) {
+            const a = (i / 14) * Math.PI * 2 + 0.26 + rand() * 0.3;
+            const r = 9 + rand() * 2.5;
+            put(pool[(i + 3) % pool.length],
+                Math.round(c + Math.cos(a) * r),
+                Math.round(c + Math.sin(a) * r),
+                Math.round(rand() * 4) * 90);
+        }
 
-    // 7. 有马路就在广场南侧铺一条双车道
-    const roadId = pool.find(id => id.indexOf('road_') === 0);
-    if (roadId) {
-        const rgz = aiClamp(c + 7, 0, size - 1);
-        for (let gx = c - 15; gx <= c + 15; gx++) {
-            put(roadId, gx, rgz);
-            put(roadId, gx, rgz + 1);
+        // 6. 外圈远景：半径 13~17，18 件「看得见」的高个子，撑住中景与远景
+        const tall = ['tree', 'street_lamp', 'billboard', 'apartment', 'office', 'bus_stop', 'traffic_light', 'car']
+            .filter(id => id !== subjectId);
+        for (let i = 0; i < 18; i++) {
+            const a = (i / 18) * Math.PI * 2 + 0.13 + rand() * 0.25;
+            const r = 13 + rand() * 4;
+            put(tall[i % tall.length],
+                Math.round(c + Math.cos(a) * r),
+                Math.round(c + Math.sin(a) * r),
+                Math.round(rand() * 4) * 90);
+        }
+
+        // 7. 有马路就在广场南侧铺一条双车道
+        const roadId = pool.find(id => id.indexOf('road_') === 0);
+        if (roadId) {
+            const rgz = aiClamp(c + 7, 0, size - 1);
+            for (let gx = c - 15; gx <= c + 15; gx++) {
+                put(roadId, gx, rgz);
+                put(roadId, gx, rgz + 1);
+            }
         }
     }
 
-    // 4. 途经点
+    // 5. 途经点
     const w = apiWorldOf(c, c);
     const lookAt = { x: aiRound2(w.x), y: aiRound2(Math.max(0.8, aiItemHeight(subjectId) * 0.55)), z: aiRound2(w.z) };
     const route = [];
 
     film.beats.forEach(b => {
-        const h = aiRound2(b.h * tone.hMul);
-        const d = aiRound2(b.d * tone.dMul);
+        const h = aiRound2(b.h * tone.hMul * hs);
+        const d = aiRound2(b.d * tone.dMul * ls);
         if (b.orbit) {
+            const or = Math.max(2, b.orbit.r * ls);
             for (let i = 0; i < b.orbit.count; i++) {
                 const a = (i / b.orbit.count) * Math.PI * 2;
                 route.push({
-                    grid: [aiClamp(Math.round(c + Math.cos(a) * b.orbit.r), 0, size - 1),
-                           aiClamp(Math.round(c + Math.sin(a) * b.orbit.r), 0, size - 1)],
+                    grid: [aiClamp(Math.round(c + Math.cos(a) * or), 0, size - 1),
+                           aiClamp(Math.round(c + Math.sin(a) * or), 0, size - 1)],
                     camera: { mode: b.mode, heightTiles: h, distanceTiles: d, lookAheadTiles: b.look, lookAt }
                 });
             }
@@ -348,15 +375,19 @@ function aiComposeSpec(ui) {
             const cam = { mode: b.mode, heightTiles: h, distanceTiles: d, lookAheadTiles: b.look };
             if (b.aim === 'subject') cam.lookAt = lookAt;
             route.push({
-                grid: [aiClamp(Math.round(c + b.at[0]), 0, size - 1),
-                       aiClamp(Math.round(c + b.at[1]), 0, size - 1)],
+                grid: [aiClamp(Math.round(c + b.at[0] * ls), 0, size - 1),
+                       aiClamp(Math.round(c + b.at[1] * ls), 0, size - 1)],
                 camera: cam
             });
         }
     });
 
+    // 6. 防穿模：路径不能从主体身上穿过去（主体越高越容易穿帮，安全距离跟着涨）
+    aiGuardRoute(route, c, aiClamp(1.6 + aiItemHeight(subjectId) * 0.1, 1.6, 4.5));
+
     const b0 = film.beats[0];
     return {
+        sky: tone.sky || 'day',
         items,
         camera: {
             mode: b0.mode,
@@ -367,6 +398,142 @@ function aiComposeSpec(ui) {
         route,
         play: { autoplay: true, loop: false, speed: len.speed }
     };
+}
+
+/**
+ * 机位防穿模。
+ *
+ * 关键：导览相机的位置是「途经点 − distanceTiles × 行进方向 + 高度」，**不是途经点本身**。
+ * 所以只检查途经点离主体多远是不够的 —— 相机可能被后跟距离顶到主体身上。
+ * 这里直接算相机落点，不足安全距离就把途经点沿径向外推，迭代几次收敛。
+ *
+ * 另外把「相邻两点的连线穿过主体」也一并处理：在最近点处插一个绕行点兜过去。
+ * 单位：minTiles 是格，其余换算成世界单位。
+ */
+function aiGuardRoute(route, c, minTiles) {
+    if (route.length < 2) return route;
+    const size = aiGridSize();
+    const cw = apiWorldOf(c, c);
+    const safe = minTiles * tileSize;
+
+    const worldOf = (p) => {
+        if (Array.isArray(p.grid)) return apiWorldOf(p.grid[0], p.grid[1]);
+        if (Array.isArray(p.pos)) return { x: p.pos[0], z: p.pos[1] };
+        return null;
+    };
+    const moveBy = (p, dx, dz) => {
+        const w = worldOf(p);
+        if (!w) return;
+        const x = w.x + dx, z = w.z + dz;
+        const half = (size * tileSize) / 2;
+        if (Array.isArray(p.grid)) {
+            p.grid = [aiClamp(Math.round((x + half - tileSize / 2) / tileSize), 0, size - 1),
+                      aiClamp(Math.round((z + half - tileSize / 2) / tileSize), 0, size - 1)];
+        } else if (Array.isArray(p.pos)) {
+            p.pos = [aiRound2(x), aiRound2(z)];
+        }
+    };
+
+    // 1. 相机落点外推：迭代收敛，因为挪动途经点会改变行进方向
+    for (let pass = 0; pass < 4; pass++) {
+        let moved = false;
+        for (let i = 0; i < route.length; i++) {
+            const cam = aiCameraSpot(route, i, cw);
+            if (!cam) continue;
+            const dist = Math.hypot(cam.x - cw.x, cam.z - cw.z);
+            if (dist >= safe) continue;
+            const ux = dist > 0.01 ? (cam.x - cw.x) / dist : 0.707;
+            const uz = dist > 0.01 ? (cam.z - cw.z) / dist : 0.707;
+            const need = safe - dist + 0.2;
+            moveBy(route[i], ux * need, uz * need);
+            moved = true;
+        }
+        if (!moved) break;
+    }
+
+    // 2. 相邻点连线若穿过主体，在最近点处插一个绕行点，让路径从旁边兜过去
+    const out = [route[0]];
+    for (let i = 1; i < route.length; i++) {
+        const a = worldOf(route[i - 1]);
+        const b = worldOf(route[i]);
+        if (a && b) {
+            const dx = b.x - a.x, dz = b.z - a.z;
+            const len2 = dx * dx + dz * dz;
+            if (len2 > 1e-6) {
+                const t = ((cw.x - a.x) * dx + (cw.z - a.z) * dz) / len2;
+                if (t > 0.02 && t < 0.98) {
+                    const mx = a.x + dx * t, mz = a.z + dz * t;
+                    if (Math.hypot(mx - cw.x, mz - cw.z) < safe) {
+                        let nx = -dz, nz = dx;
+                        const nl = Math.hypot(nx, nz) || 1;
+                        nx /= nl; nz /= nl;
+                        const side = ((mx - cw.x) * nx + (mz - cw.z) * nz) >= 0 ? 1 : -1;
+                        const r = safe * 1.3;
+                        const detour = { camera: JSON.parse(JSON.stringify(route[i].camera)), grid: [c, c] };
+                        moveBy(detour, (cw.x + nx * side * r) - cw.x, (cw.z + nz * side * r) - cw.z);
+                        out.push(detour);
+                    }
+                }
+            }
+        }
+        out.push(route[i]);
+    }
+
+    // 3. 相邻点落在同一格会被 addWaypoint 当重复点丢掉，这里先错开
+    for (let i = 1; i < out.length; i++) {
+        const a = aiRouteWorld(out[i - 1]);
+        const b = aiRouteWorld(out[i]);
+        if (!a || !b) continue;
+        if (Math.abs(a.x - b.x) < 1.5 && Math.abs(a.z - b.z) < 1.5) {
+            let nx = -(a.z - cw.z), nz = a.x - cw.x;
+            const nl = Math.hypot(nx, nz) || 1;
+            moveBy(out[i], (nx / nl) * tileSize * 1.4, (nz / nl) * tileSize * 1.4);
+        }
+    }
+
+    // 4. 抽稀到途经点上限（首尾保留）
+    if (out.length <= WAYPOINT_MAX) return out;
+    const keep = [out[0]];
+    for (let i = 1; i < WAYPOINT_MAX - 1; i++) {
+        keep.push(out[Math.round((i * (out.length - 1)) / (WAYPOINT_MAX - 1))]);
+    }
+    keep.push(out[out.length - 1]);
+    return keep;
+}
+
+/**
+ * 算出第 i 个途经点上导览相机的实际水平落点。
+ * 与 camera.js 的 desiredStateForWaypoint 同一套几何：
+ *   相机 = 途经点 − distanceTiles × (朝向下一个途经点的单位向量)
+ * 最后一个点沿用上一段的方向。
+ */
+function aiCameraSpot(route, i, cw) {
+    const cur = aiRouteWorld(route[i]);
+    if (!cur) return null;
+    const cam = route[i].camera || {};
+    if (cam.mode === 'pose' && cam.pose && cam.pose.pos) {
+        return { x: cam.pose.pos.x, z: cam.pose.pos.z };
+    }
+    const d = (typeof cam.distanceTiles === 'number' ? cam.distanceTiles : 2.5) * tileSize;
+    let nx, nz;
+    const nxt = aiRouteWorld(route[i + 1] || route[i]);
+    if (nxt && (Math.abs(nxt.x - cur.x) > 1e-4 || Math.abs(nxt.z - cur.z) > 1e-4)) {
+        nx = nxt.x - cur.x; nz = nxt.z - cur.z;
+    } else if (i > 0) {
+        const prv = aiRouteWorld(route[i - 1]);
+        nx = cur.x - prv.x; nz = cur.z - prv.z;
+    } else {
+        nx = cw.x - cur.x; nz = cw.z - cur.z;
+    }
+    const nl = Math.hypot(nx, nz) || 1;
+    return { x: cur.x - (nx / nl) * d, z: cur.z - (nz / nl) * d };
+}
+
+function aiRouteWorld(p) {
+    if (!p) return null;
+    if (Array.isArray(p.grid)) return apiWorldOf(p.grid[0], p.grid[1]);
+    if (Array.isArray(p.pos)) return { x: p.pos[0], z: p.pos[1] };
+    return null;
 }
 
 // ============ 七、对外接口（供 GridBuilder 挂载 / 脚本调用） ============

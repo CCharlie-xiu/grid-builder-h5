@@ -22,7 +22,10 @@ const SKY_PRESETS = {
         skyline: 0x6E93B8,
         hemiSky: 0xBFD8EF,
         hemiGround: 0x1A2433,
-        sun: 0xFFF4E2
+        sun: 0xFFF4E2,
+        ambient: 0.55, hemiIntensity: 0.65, dirIntensity: 1.0,
+        fill: 0x3b82f6, fillIntensity: 1.0,
+        floor: 0x111a29, border: 0x24334a
     },
     // 蓝调时刻：深蓝天顶 + 暖色地平线
     dusk: {
@@ -35,12 +38,33 @@ const SKY_PRESETS = {
         skyline: 0x2E4460,
         hemiSky: 0x6E8CB0,
         hemiGround: 0x14181F,
-        sun: 0xFFD9A8
+        sun: 0xFFD9A8,
+        ambient: 0.45, hemiIntensity: 0.55, dirIntensity: 0.85,
+        fill: 0x3b82f6, fillIntensity: 0.8,
+        floor: 0x0E1622, border: 0x1B2536
+    },
+    // 影棚暗调：近黑天顶 + 冷灰地平线，用来拍高级质感的产品片
+    // 台面与天空压暗、主体受光充足 —— 靠明暗对比出质感
+    studio: {
+        top: 0x05080F,
+        mid: 0x0D1626,
+        horizon: 0x1E2C42,
+        band: 0x3E5C82,
+        fog: 0x121B29,
+        ground: 0x080C14,
+        skyline: 0x131C2A,
+        hemiSky: 0x4C688E,
+        hemiGround: 0x0A1018,
+        sun: 0xFFF0DE,
+        ambient: 0.42, hemiIntensity: 0.45, dirIntensity: 0.95,
+        fill: 0x2B4C7E, fillIntensity: 0.6,
+        floor: 0x080D16, border: 0x121A28
     }
 };
 
 const SKY_PRESET = 'day';
 const SKY = SKY_PRESETS[SKY_PRESET] || SKY_PRESETS.day;
+let currentSkyPreset = SKY_PRESET;
 
 // 各层尺度（世界单位）
 const SKY_RADIUS = 700;         // 天穹半径，需小于相机 far
@@ -166,3 +190,61 @@ function initSky() {
     createFarGround();
     createSkyline();
 }
+
+// ============ 运行时切换预设 ============
+
+/**
+ * 切换天空预设（day / dusk / studio），并同步雾、远景地面、天际线、灯光与台面配色。
+ * 用于拍不同调性的片子：studio 是暗调影棚，拍产品片用。
+ */
+function setSkyPreset(name) {
+    const p = SKY_PRESETS[name];
+    if (!p) return { ok: false, reason: `未知天空预设：${name}`, available: Object.keys(SKY_PRESETS) };
+
+    // 天穹 shader 颜色
+    if (skyMesh && skyMesh.material && skyMesh.material.uniforms) {
+        const u = skyMesh.material.uniforms;
+        u.topColor.value.setHex(p.top);
+        u.midColor.value.setHex(p.mid);
+        u.horizonColor.value.setHex(p.horizon);
+        u.bandColor.value.setHex(p.band);
+    }
+
+    // 背景与雾
+    if (scene) {
+        if (scene.background && scene.background.isColor) scene.background.setHex(p.horizon);
+        if (scene.fog) scene.fog.color.setHex(p.fog);
+    }
+
+    // 远景地面与天际线剪影
+    if (farGroundMesh) farGroundMesh.material.color.setHex(p.ground);
+    if (skylineGroup && skylineGroup.children.length) {
+        skylineGroup.children[0].material.color.setHex(p.skyline);
+    }
+
+    // 灯光
+    if (typeof ambientLight !== 'undefined' && ambientLight) ambientLight.intensity = p.ambient;
+    if (typeof hemiLight !== 'undefined' && hemiLight) {
+        hemiLight.color.setHex(p.hemiSky);
+        hemiLight.groundColor.setHex(p.hemiGround);
+        hemiLight.intensity = p.hemiIntensity;
+    }
+    if (typeof dirLight !== 'undefined' && dirLight) {
+        dirLight.color.setHex(p.sun);
+        dirLight.intensity = p.dirIntensity;
+    }
+    if (typeof fillLight !== 'undefined' && fillLight) {
+        fillLight.color.setHex(p.fill);
+        fillLight.intensity = p.fillIntensity;
+    }
+
+    // 建造台面与边框
+    if (typeof baseMesh !== 'undefined' && baseMesh) baseMesh.material.color.setHex(p.floor);
+    if (typeof borderMesh !== 'undefined' && borderMesh) borderMesh.material.color.setHex(p.border);
+
+    currentSkyPreset = name;
+    if (typeof renderNow === 'function') renderNow();
+    return { ok: true, preset: name };
+}
+
+function getSkyPreset() { return currentSkyPreset; }

@@ -7,6 +7,8 @@
 // Three.js core variables
 let scene, camera, renderer, controls;
 let gridHelper, raycaster, mouse;
+let ambientLight, hemiLight, dirLight, fillLight;   // 灯光（sky.js 切换预设时同步调整）
+let baseMesh, borderMesh;                            // 建造台面与边框（可整体调暗）
 const gridSize = 40; // 40x40 grid（版图 80x80 世界单位）
 const tileSize = 2; // Each tile is 2x2 units
 let plane; // Invisible raycast plane
@@ -42,14 +44,15 @@ function init() {
     controls.target.set(0, 0, 0);
 
     // 环境光 + 半球光（天空色 → 地面色的自然反弹）
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+    // 提到全局，供 sky.js 切换预设时同步调光
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(SKY.hemiSky, SKY.hemiGround, 0.65);
+    hemiLight = new THREE.HemisphereLight(SKY.hemiSky, SKY.hemiGround, 0.65);
     scene.add(hemiLight);
 
     // 平行光（投射阴影）——太阳角度抬高，缩短阴影、贴近晴天观感
-    const dirLight = new THREE.DirectionalLight(SKY.sun, 1.0);
+    dirLight = new THREE.DirectionalLight(SKY.sun, 1.0);
     dirLight.position.set(50, 110, 35);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
@@ -66,9 +69,9 @@ function init() {
     scene.add(dirLight);
 
     // 顶部冷色补光
-    const pointLight = new THREE.PointLight(0x3b82f6, 1, 90);
-    pointLight.position.set(0, 30, 0);
-    scene.add(pointLight);
+    fillLight = new THREE.PointLight(0x3b82f6, 1, 90);
+    fillLight.position.set(0, 30, 0);
+    scene.add(fillLight);
 
     createFloorAndGrid();
 
@@ -128,14 +131,14 @@ function createFloorAndGrid() {
         polygonOffsetFactor: 1.5,
         polygonOffsetUnits: 1.5
     });
-    const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+    baseMesh = new THREE.Mesh(baseGeo, baseMat);
     baseMesh.receiveShadow = true;
     scene.add(baseMesh);
 
     // Perimeter boundary frame
     const boxGeo = new THREE.BoxGeometry(totalWidth + 0.5, 0.6, totalWidth + 0.5);
     const boxMat = new THREE.MeshStandardMaterial({ color: 0x24334a, roughness: 0.5 });
-    const borderMesh = new THREE.Mesh(boxGeo, boxMat);
+    borderMesh = new THREE.Mesh(boxGeo, boxMat);
     borderMesh.position.y = -0.31; // 顶面降到 -0.01，不再与地板 y=0 共面（共面会整片闪烁）
     borderMesh.receiveShadow = true;
     scene.add(borderMesh);

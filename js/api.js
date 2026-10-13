@@ -210,9 +210,15 @@ function apiBuild(spec, opt) {
     });
     report.cells = placedItems.size;
 
+    // —— 1.5 天空预设（拍片调性：day / dusk / studio）——
+    if (typeof spec.sky === 'string') {
+        const r = setSkyPreset(spec.sky);
+        if (r.ok) report.sky = spec.sky;
+        else report.warnings.push(r.reason);
+    }
+
     // —— 2. 镜头参数 ——
-    if (spec.camera && typeof spec.camera === 'object') {
-        const c = spec.camera;
+    if (spec.camera && typeof spec.camera === 'object') {        const c = spec.camera;
         if (typeof c.mode === 'string' && CAMERA_MODES.some(m => m.id === c.mode)) {
             globalCameraConfig.mode = c.mode;
         } else if (c.mode) {
@@ -693,6 +699,7 @@ window.GridBuilder = {
     setView: apiSetView,
     preview: apiPreview,
     clean: apiClean,
+    sky: (name) => (name === undefined ? { preset: getSkyPreset(), available: Object.keys(SKY_PRESETS) } : setSkyPreset(name)),
     hideUI: () => apiClean(true),
     showUI: () => apiClean(false),
     renderNow,

@@ -87,6 +87,7 @@ const CATALOG = [
     { id: 'tree', name: '多边形树', icon: 'fa-tree', color: 0x22c55e, type: 'tree', cat: 'prop' },
     { id: 'light', name: '发光晶体', icon: 'fa-gem', color: 0xa855f7, type: 'light', cat: 'prop' },
     { id: 'person', name: '人物', icon: 'fa-person', color: 0x4e7bb8, type: 'person', cat: 'prop' },
+    { id: 'bag', name: '手提袋', icon: 'fa-bag-shopping', color: 0xe6dccb, type: 'bag', cat: 'prop' },
 
     // —— 载具 ——
     { id: 'car', name: '小汽车', icon: 'fa-car-side', color: 0xf97316, type: 'car', cat: 'vehicle' },

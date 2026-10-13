@@ -570,6 +570,29 @@ const ITEM_BUILDERS = {
         group.userData.itemHeight = 1.6;
     },
 
+    // 手提袋：袋身 + 袋口折边 + 双提手 + 正面品牌面板
+    // 造型要点：袋身用一整块盒子（分两段会出现「盒子上叠盒子」的错觉），
+    //           提手用半圆环（TorusGeometry arc=π），尺寸要够大才认得出是袋子
+    bag(group) {
+        const paper = _m(0xEDE4D4, 0.88, 0.02);   // 米白纸感
+        const fold = _m(0xD6C8AF, 0.92, 0.02);    // 折边 / 压痕
+        const gold = _m(0xC9A15A, 0.28, 0.85);    // 提手与烫金
+        const label = _m(0x2B2620, 0.5, 0.15);    // 品牌面板
+
+        _add(group, _boxGeo(1.18, 1.42, 0.52), paper, 0, 0.71, 0);    // 袋身
+        _add(group, _boxGeo(1.24, 0.08, 0.58), fold, 0, 1.44, 0);     // 袋口折边
+        _add(group, _boxGeo(1.22, 0.04, 0.56), fold, 0, 0.02, 0);     // 底部压痕
+
+        _add(group, _boxGeo(0.66, 0.46, 0.02), label, 0, 0.86, 0.27); // 品牌面板
+        _add(group, _boxGeo(0.34, 0.05, 0.02), gold, 0, 0.86, 0.285); // 烫金横条
+
+        [-0.32, 0.32].forEach(x => {
+            _add(group, _torGeo(0.26, 0.035, 8, 20, Math.PI), gold, x, 1.44, 0);
+        });
+
+        group.userData.itemHeight = 1.75;
+    },
+
     bus(group) {
         const body = _m(0xF0B429, 0.55, 0.25);
         const dark = _m(0x1F2937, 0.4, 0.3);
