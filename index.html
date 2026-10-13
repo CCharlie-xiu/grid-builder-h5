@@ -223,47 +223,89 @@
         </div>
     </div>
 
-    <!-- AI 模式面板：把 AI 写的场景 Spec 粘回来执行 -->
+    <!-- AI 模式面板：选风格 → 直接出片；也可把描述交给外部 AI -->
     <div id="ai-panel" class="ui-layer absolute inset-0 z-40 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm">
-        <div class="glass-panel rounded-2xl w-[600px] max-w-[calc(100vw-3rem)] p-5 shadow-2xl pointer-events-auto">
-            <div class="flex items-center gap-2.5 mb-3">
+        <div class="glass-panel rounded-2xl w-[680px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] flex flex-col shadow-2xl pointer-events-auto">
+
+            <div class="flex items-center gap-2.5 px-5 pt-4 pb-3 shrink-0">
                 <span class="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-wand-magic-sparkles text-cyan-300 text-xs"></i>
                 </span>
                 <span class="text-sm font-bold text-slate-100">AI 模式</span>
-                <span class="text-[10px] text-slate-500">用描述生成场景与镜头轨迹</span>
+                <span class="text-[10px] text-slate-500">不用会写描述 —— 选一选就行</span>
                 <button id="ai-close" class="ml-auto w-6 h-6 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors">
                     <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
             </div>
 
-            <p class="text-xs text-slate-400 leading-relaxed mb-3">
-                复制提示词交给任意 AI，让它按你的描述写一份<b class="text-slate-200">场景 Spec</b>，粘回下面点生成即可。
-                页面上已暴露 <code class="text-cyan-300">window.GridBuilder</code>，也可由脚本直接驱动。
-            </p>
+            <div class="px-5 pb-2 ai-scroll grow">
 
-            <div class="flex flex-wrap gap-2 mb-3">
-                <button id="ai-copy-prompt" class="sel-btn">
-                    <i class="fa-solid fa-clipboard"></i>复制 AI 提示词
-                </button>
-                <button id="ai-copy-scene" class="sel-btn">
-                    <i class="fa-solid fa-file-export"></i>导出当前场景
-                </button>
-                <button id="ai-copy-spec" class="sel-btn">
-                    <i class="fa-solid fa-book"></i>复制 Spec 规范
-                </button>
+                <div class="ai-section">
+                    <div class="ai-label"><span class="ai-step">1</span>你想拍什么？</div>
+                    <div class="ai-chips" id="ai-film"></div>
+                </div>
+
+                <div class="ai-section">
+                    <div class="ai-label"><span class="ai-step">2</span>想要什么调子？</div>
+                    <div class="ai-chips" id="ai-tone"></div>
+                </div>
+
+                <div class="ai-section">
+                    <div class="ai-label"><span class="ai-step">3</span>多长、什么节奏？</div>
+                    <div class="ai-chips" id="ai-length"></div>
+                </div>
+
+                <div class="ai-section">
+                    <div class="ai-label"><span class="ai-step">4</span>画面里想有什么？<span class="ai-opt">可留空</span></div>
+                    <input id="ai-subject" class="ai-input" type="text" spellcheck="false"
+                        placeholder="比如：一家三口在院子里、街角咖啡店、城市夜景…">
+                    <div class="ai-examples">
+                        <span>试试</span>
+                        <button class="ai-example" data-fill="一家三口在院子里">一家三口在院子里</button>
+                        <button class="ai-example" data-fill="街角咖啡店">街角咖啡店</button>
+                        <button class="ai-example" data-fill="城市夜景">城市夜景</button>
+                        <button class="ai-example" data-fill="上班族的一天">上班族的一天</button>
+                    </div>
+                </div>
+
+                <div class="ai-section">
+                    <div class="ai-label"><i class="fa-solid fa-clapperboard text-[10px] text-violet-300"></i>你的片子</div>
+                    <div id="ai-script" class="ai-script"></div>
+                </div>
+
+                <details class="ai-advanced">
+                    <summary>高级：直接用 AI 写的场景 Spec</summary>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button id="ai-copy-prompt" class="sel-btn">
+                            <i class="fa-solid fa-clipboard"></i>复制给 AI
+                        </button>
+                        <button id="ai-copy-scene" class="sel-btn">
+                            <i class="fa-solid fa-file-export"></i>导出当前场景
+                        </button>
+                        <button id="ai-copy-spec" class="sel-btn">
+                            <i class="fa-solid fa-book"></i>复制 Spec 规范
+                        </button>
+                    </div>
+                    <textarea id="ai-spec" rows="7" spellcheck="false"
+                        class="ai-input mt-3 font-mono !text-[11px] leading-relaxed resize-y"
+                        placeholder='{&#10;  "items": [{ "id": "tower_canton", "grid": [20, 20] }],&#10;  "camera": { "mode": "overview", "heightTiles": 8 },&#10;  "route": [{ "grid": [4, 4] }, { "grid": [35, 35] }]&#10;}'></textarea>
+                    <button id="ai-generate" class="sel-btn mt-2">
+                        <i class="fa-solid fa-play"></i>执行这段 Spec
+                    </button>
+                </details>
+
             </div>
 
-            <textarea id="ai-spec" rows="9" spellcheck="false"
-                class="w-full rounded-xl bg-slate-950/70 border border-slate-700/70 focus:border-cyan-500/60 outline-none p-3 text-[11px] leading-relaxed text-slate-200 font-mono resize-y"
-                placeholder='{&#10;  "items": [{ "id": "tower_canton", "grid": [20, 20] }],&#10;  "camera": { "mode": "overview", "heightTiles": 8 },&#10;  "route": [{ "grid": [4, 4] }, { "grid": [35, 35] }]&#10;}'></textarea>
-
-            <div class="flex items-center gap-2 mt-3">
-                <button id="ai-generate" class="tour-primary-btn !flex-none px-5">
+            <div class="flex items-center gap-2.5 px-5 py-4 shrink-0 border-t border-slate-700/40">
+                <button id="ai-run" class="tour-primary-btn !flex-none px-5">
                     <i class="fa-solid fa-play text-[11px]"></i>生成并播放
+                </button>
+                <button id="ai-copy-brief" class="sel-btn">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>交给更强的 AI
                 </button>
                 <span id="ai-msg" class="text-[11px] text-slate-400"></span>
             </div>
+
         </div>
     </div>
 
@@ -272,7 +314,7 @@
         提示信息
     </div>
 
-    <!-- 本地脚本（加载顺序：配置 → 天空 → 场景 → 物品 → 扩展物品 → 交互 → 路线 → 相机 → 存储 → 提示 → 启动） -->
+    <!-- 本地脚本（加载顺序：配置 → 天空 → 场景 → 物品 → 扩展物品 → 交互 → 路线 → 相机 → 存储 → 提示 → API → AI 模式 → 启动） -->
     <script src="./js/config.js"></script>
     <script src="./js/sky.js"></script>
     <script src="./js/scene.js"></script>
@@ -284,6 +326,7 @@
     <script src="./js/storage.js"></script>
     <script src="./js/ui.js"></script>
     <script src="./js/api.js"></script>
+    <script src="./js/ai-mode.js"></script>
     <script src="./js/main.js"></script>
 </body>
 </html>

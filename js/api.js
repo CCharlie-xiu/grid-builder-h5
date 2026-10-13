@@ -382,14 +382,18 @@ function apiManifest() {
             'items() 列出已放置物品', 'place(id,gx,gz,opt) 放一个', 'removeAt(gx,gz) 删该格顶层',
             'rotateAt(gx,gz,deg) 旋转', 'setCamera(cfg) 改镜头', 'setRoute(points) 设路线',
             'play() / stop()', 'advance(sec) 确定性推进', 'pause() / resume() 暂停自动推进',
-            'setView(pos,target) 固定视角', 'renderNow() 立即渲染一帧', 'clear() 清空'
+            'setView(pos,target) 固定视角', 'renderNow() 立即渲染一帧', 'clear() 清空',
+            'styles() 风格清单（8 片子类型 / 6 调性 / 3 时长）',
+            'compose({film,tone,length,subject}) 风格选择 → {brief, spec}，不改场景',
+            'auto({film,tone,length,subject}) 风格选择 → 直接生成并播放'
         ],
         tips: [
             '地面是 40×40 格；建筑/家具通常占 1 格，地标视觉上更宽，建议周围留空',
             '同格可叠放，最高 5 层；桌面上放台灯、书架旁放盆栽是自然组合',
             '镜头参数以「格」为单位：高度 2.5 约等于一层楼视角，8 以上是高空俯瞰',
             '标准漫游 follow 最像人眼，物体特写 closeup 会自动注视最近物体',
-            '路线至少 2 个点才能播放；相邻点不要过近，否则路径退化'
+            '路线至少 2 个点才能播放；相邻点不要过近，否则路径退化',
+            '用户说不清要什么时不要追问参数，用 styles() 列出风格选项让他选，再 auto() 直接出片'
         ]
     };
     return apiManifestCache;
@@ -499,6 +503,7 @@ function apiClean(clean) {
     document.body.classList.toggle('clean-mode', on);
 
     // 编辑辅助不是画面内容，成片里不出现
+    if (typeof gridHelper !== 'undefined' && gridHelper) gridHelper.visible = !on;
     if (typeof routeLine !== 'undefined' && routeLine) routeLine.visible = !on;
     if (typeof waypoints !== 'undefined') {
         waypoints.forEach(w => { if (w.marker) w.marker.visible = !on; });
@@ -613,7 +618,8 @@ function apiSpecGuide() {
     ].join('\n');
 }
 
-function apiPromptText() {
+// brief：可选。传入后作为「我的描述」段落，通常是 AI 模式向导拼出的人话分镜
+function apiPromptText(brief) {
     const m = apiManifest();
     return [
         '你是 3D 场景编排助手。请根据我最后的描述，输出一份 JSON 场景 Spec。',
@@ -636,7 +642,9 @@ function apiPromptText() {
         apiSpecGuide(),
         '',
         '# 我的描述',
-        '（在这里写你的场景描述与运镜描述）'
+        brief && String(brief).trim()
+            ? String(brief).trim()
+            : '（在这里写你的场景描述与运镜描述）'
     ].join('\n');
 }
 
@@ -658,84 +666,6 @@ async function apiCopy(text) {
     document.body.removeChild(ta);
     return ok;
 }
-
-function aiPanelEl() { return document.getElementById('ai-panel'); }
-
-function openAiPanel() {
-    const p = aiPanelEl();
-    if (!p) return;
-    p.classList.remove('hidden');
-    p.classList.add('flex');
-    const msg = document.getElementById('ai-msg');
-    if (msg) msg.textContent = '';
-}
-
-function closeAiPanel() {
-    const p = aiPanelEl();
-    if (!p) return;
-    p.classList.add('hidden');
-    p.classList.remove('flex');
-}
-
-function aiFlash(text, ok) {
-    const msg = document.getElementById('ai-msg');
-    if (!msg) return;
-    msg.textContent = text;
-    msg.className = 'text-[11px] ' + (ok ? 'text-emerald-300' : 'text-rose-300');
-}
-
-(function bindAiPanel() {
-    if (!aiPanelEl()) return;
-
-    document.getElementById('ai-close').addEventListener('click', closeAiPanel);
-    aiPanelEl().addEventListener('click', (e) => { if (e.target === aiPanelEl()) closeAiPanel(); });
-
-    document.getElementById('ai-copy-prompt').addEventListener('click', async () => {
-        const ok = await apiCopy(apiPromptText());
-        aiFlash(ok ? '提示词已复制，粘给任意 AI 即可' : '复制失败，请手动全选复制', ok);
-    });
-
-    document.getElementById('ai-copy-spec').addEventListener('click', async () => {
-        const ok = await apiCopy(apiSpecGuide() + '\n\n## 物品目录\n' +
-            apiManifest().items.map(i => `${i.id}\t${i.name}\t高${i.height}`).join('\n'));
-        aiFlash(ok ? 'Spec 规范与物品目录已复制' : '复制失败', ok);
-    });
-
-    document.getElementById('ai-copy-scene').addEventListener('click', async () => {
-        const spec = apiDescribe();
-        const text = JSON.stringify(spec, null, 2);
-        document.getElementById('ai-spec').value = text;
-        const ok = await apiCopy(text);
-        aiFlash(ok ? `已导出当前场景（${spec.items.length} 件物品 / ${spec.route.length} 个途经点）` : '复制失败，已填入下方输入框', ok);
-    });
-
-    document.getElementById('ai-generate').addEventListener('click', () => {
-        const raw = document.getElementById('ai-spec').value.trim();
-        if (!raw) { aiFlash('请先粘贴场景 Spec', false); return; }
-        let spec;
-        try {
-            spec = JSON.parse(raw);
-        } catch (e) {
-            aiFlash('JSON 解析失败：' + e.message, false);
-            return;
-        }
-        try {
-            const rep = apiBuild(spec, { autoplay: true });
-            const parts = [`已放置 ${rep.items} 件（${rep.cells} 格）`, `${rep.route} 个途经点`];
-            if (rep.playing) parts.push('正在播放');
-            if (rep.skipped.length) parts.push(`${rep.skipped.length} 条未落地`);
-            aiFlash(parts.join(' · '), rep.skipped.length === 0);
-            if (!rep.skipped.length) setTimeout(closeAiPanel, 900);
-        } catch (e) {
-            aiFlash('生成失败：' + e.message, false);
-        }
-    });
-
-    // Esc 关闭（选择/移动的 Esc 处理在 interaction.js，这里只处理面板）
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !aiPanelEl().classList.contains('hidden')) closeAiPanel();
-    });
-})();
 
 // ============ 挂载 ============
 
@@ -768,9 +698,17 @@ window.GridBuilder = {
     renderNow,
     grid: { worldOf: apiWorldOf, gridOf: apiGridOf, size: gridSize, tileSize },
 
-    // AI 模式面板
-    openPanel: openAiPanel,
-    closePanel: closeAiPanel,
+    // AI 模式面板（实现在 ai-mode.js，延迟引用以避开加载顺序）
+    openPanel: () => openAiPanel(),
+    closePanel: () => closeAiPanel(),
     promptText: apiPromptText,
-    specGuide: apiSpecGuide
+    specGuide: apiSpecGuide,
+
+    // 风格向导：选「片子类型 + 调性 + 时长」直接出 Spec，不需要外部 AI
+    styles: () => aiStyles(),
+    compose: choice => aiCompose(choice || {}),
+    auto: (choice, opt) => {
+        const r = aiCompose(choice || {});
+        return { brief: r.brief, report: apiBuild(r.spec, opt || { autoplay: true }), spec: r.spec };
+    }
 };
