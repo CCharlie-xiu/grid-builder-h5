@@ -482,6 +482,17 @@ function apiAdvance(seconds) {
 
 // ============ 视角 / 渲染（抓帧用） ============
 
+/**
+ * 跳到第 i 个途经点的精确镜头姿态（分镜抓帧用）
+ * 与播放中经过该点的姿态完全一致
+ */
+function apiPreview(i) {
+    const idx = Math.max(0, Math.min(waypoints.length - 1, Math.round(i || 0)));
+    const ok = previewWaypointCamera(idx);
+    renderNow();
+    return { ok, index: idx, total: waypoints.length };
+}
+
 function apiSetView(pos, target) {
     if (!Array.isArray(pos) || pos.length < 3) throw new Error('pos 需要 [x,y,z]');
     if (!Array.isArray(target) || target.length < 3) throw new Error('target 需要 [x,y,z]');
@@ -709,6 +720,7 @@ window.GridBuilder = {
     advance: apiAdvance,
 
     setView: apiSetView,
+    preview: apiPreview,
     renderNow,
     grid: { worldOf: apiWorldOf, gridOf: apiGridOf, size: gridSize, tileSize },
 

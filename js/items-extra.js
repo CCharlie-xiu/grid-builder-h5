@@ -211,6 +211,18 @@ const ITEM_BUILDERS = {
         group.userData.itemHeight = 1.08;
     },
 
+    // ---------- 基础地形 ----------
+
+    lawn(group) {
+        const grass = _m(0x4E9A5F, 0.95);
+        const stripe = _m(0x3E7D4C, 0.95);
+        _add(group, _boxGeo(tileSize * 0.98, 0.06, tileSize * 0.98), grass, 0, 0.03, 0);
+        // 修剪条纹，让平面有草地质感
+        _add(group, _boxGeo(tileSize * 0.9, 0.02, tileSize * 0.4), stripe, 0, 0.065, -tileSize * 0.25);
+        _add(group, _boxGeo(tileSize * 0.9, 0.02, tileSize * 0.4), stripe, 0, 0.065, tileSize * 0.25);
+        group.userData.itemHeight = 0.08;
+    },
+
     // ---------- 建筑 ----------
 
     house(group) {
@@ -280,6 +292,22 @@ const ITEM_BUILDERS = {
         _add(group, _cylGeo(0.05, 0.05, 1.5, 8), metal, -0.9, 0.75, 1.12);
         _add(group, _cylGeo(0.05, 0.05, 1.5, 8), metal, 0.9, 0.75, 1.12);
         group.userData.itemHeight = 2.05;
+    },
+
+    mall(group) {
+        const facade = _facade(0xD8DEE6, 0x7FA8C8, 2, 3);
+        const slab = _m(0xB9BFC8, 0.9);
+        const metal = _m(0x8A94A3, 0.35, 0.7);
+        _add(group, _boxGeo(1.9, 3.4, 1.9), facade, 0, 1.7, 0);
+        _add(group, _boxGeo(2.0, 0.22, 2.0), slab, 0, 3.51, 0);
+        _add(group, _boxGeo(0.8, 0.45, 0.8), slab, 0.3, 3.85, -0.3);
+        // 底层橱窗与入口
+        _add(group, _boxGeo(1.6, 1.1, 0.06), _glass(), 0, 0.6, 0.96);
+        _add(group, _boxGeo(2.0, 0.12, 0.6), _m(0x3E7BB8, 0.7), 0, 1.35, 1.15);
+        _add(group, _boxGeo(1.6, 0.5, 0.12), _glow(0xFBBF24, 0.7), 0, 1.75, 1.0);
+        _add(group, _cylGeo(0.06, 0.06, 1.3, 8), metal, -0.85, 0.65, 1.3);
+        _add(group, _cylGeo(0.06, 0.06, 1.3, 8), metal, 0.85, 0.65, 1.3);
+        group.userData.itemHeight = 4.08;
     },
 
     office(group) {
@@ -522,6 +550,58 @@ const ITEM_BUILDERS = {
             _add(group, _sphGeo(0.13, 8, 6), _m(colors[i % colors.length], 0.75), x, 0.6, z);
         }
         group.userData.itemHeight = 0.75;
+    },
+
+    // ---------- 人物 / 载具 ----------
+
+    person(group) {
+        const cloth = _m(0x4E7BB8, 0.85);
+        const pants = _m(0x2B3444, 0.85);
+        const skin = _m(0xE8C4A0, 0.8);
+        const hair = _m(0x2A2118, 0.9);
+        _add(group, _boxGeo(0.13, 0.72, 0.14), pants, -0.11, 0.36, 0);
+        _add(group, _boxGeo(0.13, 0.72, 0.14), pants, 0.11, 0.36, 0);
+        _add(group, _boxGeo(0.42, 0.56, 0.24), cloth, 0, 1.0, 0);
+        _add(group, _boxGeo(0.1, 0.5, 0.1), cloth, -0.26, 1.0, 0);
+        _add(group, _boxGeo(0.1, 0.5, 0.1), cloth, 0.26, 1.0, 0);
+        _add(group, _sphGeo(0.15, 12, 10), skin, 0, 1.42, 0);
+        const h = _add(group, _sphGeo(0.16, 12, 10), hair, 0, 1.46, -0.02);
+        h.scale.set(1, 0.75, 1);
+        group.userData.itemHeight = 1.6;
+    },
+
+    bus(group) {
+        const body = _m(0xF0B429, 0.55, 0.25);
+        const dark = _m(0x1F2937, 0.4, 0.3);
+        const glass = _glass();
+        _add(group, _boxGeo(2.4, 1.5, 1.0), body, 0, 1.0, 0);
+        _add(group, _boxGeo(2.1, 0.5, 0.06), glass, 0, 1.25, 0.51);
+        _add(group, _boxGeo(2.1, 0.5, 0.06), glass, 0, 1.25, -0.51);
+        _add(group, _boxGeo(0.06, 0.55, 0.86), glass, 1.21, 1.25, 0);
+        _add(group, _boxGeo(0.06, 0.4, 0.86), glass, -1.21, 1.3, 0);
+        _add(group, _boxGeo(0.05, 1.0, 0.42), dark, 0, 0.7, 0.51);
+        _add(group, _boxGeo(0.9, 0.16, 0.6), _m(0xD8DEE6, 0.6), -0.2, 1.83, 0);
+        const wheelGeo = _cylGeo(0.28, 0.28, 0.16, 14);
+        [[0.75, 0.5], [0.75, -0.5], [-0.75, 0.5], [-0.75, -0.5]].forEach(([x, z]) => {
+            _add(group, wheelGeo, dark, x, 0.28, z).rotation.x = Math.PI / 2;
+        });
+        group.userData.itemHeight = 1.91;
+    },
+
+    mower(group) {
+        const body = _m(0xD9534F, 0.6, 0.2);
+        const dark = _m(0x1F2937, 0.6);
+        const metal = _m(0x8A94A3, 0.4, 0.6);
+        _add(group, _boxGeo(0.72, 0.28, 0.52), body, 0, 0.42, 0);
+        _add(group, _boxGeo(0.6, 0.34, 0.34), _m(0x2F8F7F, 0.7), 0, 0.5, -0.38);
+        _add(group, _boxGeo(0.05, 0.8, 0.05), metal, -0.24, 0.82, -0.42).rotation.x = 0.42;
+        _add(group, _boxGeo(0.05, 0.8, 0.05), metal, 0.24, 0.82, -0.42).rotation.x = 0.42;
+        _add(group, _boxGeo(0.56, 0.05, 0.05), metal, 0, 1.18, -0.58);
+        const wheelGeo = _cylGeo(0.12, 0.12, 0.1, 12);
+        [[-0.32, 0.28], [0.32, 0.28], [-0.32, -0.3], [0.32, -0.3]].forEach(([x, z]) => {
+            _add(group, wheelGeo, dark, x, 0.12, z).rotation.z = Math.PI / 2;
+        });
+        group.userData.itemHeight = 1.22;
     }
 };
 

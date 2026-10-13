@@ -36,6 +36,7 @@ const CATALOG = [
     { id: 'road_straight', name: '直道', icon: 'fa-road', color: 0x64748b, type: 'road', shape: 'straight', cat: 'terrain' },
     { id: 'road_curve', name: '弯道', icon: 'fa-shuffle', color: 0x64748b, type: 'road', shape: 'curve', cat: 'terrain' },
     { id: 'road_cross', name: '十字路口', icon: 'fa-plus', color: 0x64748b, type: 'road', shape: 'cross', cat: 'terrain' },
+    { id: 'lawn', name: '草坪', icon: 'fa-seedling', color: 0x4e9a5f, type: 'lawn', cat: 'terrain' },
 
     // —— 建筑 ——
     { id: 'house', name: '小房子', icon: 'fa-house', color: 0xe8e2d8, type: 'house', cat: 'building' },
@@ -43,6 +44,7 @@ const CATALOG = [
     { id: 'apartment', name: '公寓楼', icon: 'fa-building', color: 0xc9d2dc, type: 'apartment', cat: 'building' },
     { id: 'villa', name: '别墅', icon: 'fa-hotel', color: 0xf0e6d2, type: 'villa', cat: 'building' },
     { id: 'shop', name: '便利店', icon: 'fa-store', color: 0x5eead4, type: 'shop', cat: 'building' },
+    { id: 'mall', name: '商场', icon: 'fa-shop', color: 0x8fb8d8, type: 'mall', cat: 'building' },
     { id: 'office', name: '写字楼', icon: 'fa-city', color: 0x7fb2d8, type: 'office', cat: 'building' },
     { id: 'factory', name: '厂房', icon: 'fa-industry', color: 0x9aa7b4, type: 'factory', cat: 'building' },
     { id: 'cube', name: '现代方块', icon: 'fa-cube', color: 0x3b82f6, type: 'block', shape: 'box', cat: 'building' },
@@ -79,13 +81,16 @@ const CATALOG = [
     { id: 'fence', name: '围栏', icon: 'fa-bars', color: 0xb9c2cc, type: 'fence', cat: 'city' },
     { id: 'fountain', name: '喷泉', icon: 'fa-water', color: 0x7dd3fc, type: 'fountain', cat: 'city' },
     { id: 'flowerbed', name: '花坛', icon: 'fa-spa', color: 0xef93b1, type: 'flowerbed', cat: 'city' },
+    { id: 'mower', name: '割草机', icon: 'fa-tractor', color: 0xd9534f, type: 'mower', cat: 'city' },
 
     // —— 景观道具 ——
     { id: 'tree', name: '多边形树', icon: 'fa-tree', color: 0x22c55e, type: 'tree', cat: 'prop' },
     { id: 'light', name: '发光晶体', icon: 'fa-gem', color: 0xa855f7, type: 'light', cat: 'prop' },
+    { id: 'person', name: '人物', icon: 'fa-person', color: 0x4e7bb8, type: 'person', cat: 'prop' },
 
     // —— 载具 ——
-    { id: 'car', name: '小汽车', icon: 'fa-car-side', color: 0xf97316, type: 'car', cat: 'vehicle' }
+    { id: 'car', name: '小汽车', icon: 'fa-car-side', color: 0xf97316, type: 'car', cat: 'vehicle' },
+    { id: 'bus', name: '公交车', icon: 'fa-bus', color: 0xf0b429, type: 'bus', cat: 'vehicle' }
 ];
 
 // 当前选中的分类页签 / 工具

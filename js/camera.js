@@ -293,6 +293,7 @@ function beginTourCamera() {
     renderCameraMode = 'tour';
     previewingPoint = false;
     ensureDebugObjects();
+    applyTourCamera();   // 立即归位：否则切到导览相机的第一帧仍是上一处残留姿态
     return true;
 }
 
