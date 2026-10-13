@@ -160,7 +160,10 @@ function animate() {
     const dt = clock.getDelta();
 
     // 导览：固定步长推进（与帧率解耦，重复播放结果一致）
-    if (typeof advanceTour === 'function') advanceTour(dt);
+    // api.js 可通过 pause() 暂停自动推进，便于脚本逐帧确定性抓图
+    if (typeof advanceTour === 'function' && !(typeof isTourPaused === 'function' && isTourPaused())) {
+        advanceTour(dt);
+    }
 
     // 编辑器控制器只在编辑器相机渲染时驱动，避免与导览相机互相干扰
     if (renderCameraMode === 'editor') controls.update();

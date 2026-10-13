@@ -18,6 +18,8 @@ python3 -m http.server 8899
 | 物品 | 41 类：建筑 9 / 地标 8 / 家具 9 / 城市配套 9 / 基础地形 3 / 景观道具 2 / 载具 1 |
 | 分类 | 页签过滤：全部 / 基础地形 / 建筑 / 地标 / 家具 / 城市配套 / 景观道具 / 载具 |
 | 天空 | 高德 3D 风格天际线：渐变天穹 + 地平线亮带 + 大气雾 + 远景地面 + 天际线剪影环 |
+| AI 模式 | 「AI 模式」按钮 → 复制提示词给任意 AI 写场景 Spec → 粘回来一键生成并播放 |
+| 脚本 API | `window.GridBuilder`：manifest / build / describe / advance 等，供 AI 与自动化脚本驱动 |
 | 路线 | 规划模式点击地面添加途经点（上限 20），支持撤销、清空 |
 | 导览 | 导览相机沿 Catmull-Rom 样条巡航，独立于编辑器相机 |
 | 镜头 | 4 种预设 + 途经点级覆盖，参数以「格」为单位 |
@@ -35,6 +37,54 @@ python3 -m http.server 8899
 | 基础地形 | 直道、弯道、十字路口 |
 | 景观道具 | 多边形树、发光晶体 |
 | 载具 | 小汽车 |
+
+## 脚本化 API（AI 模式）
+
+页面暴露 `window.GridBuilder`，用一份 JSON「场景 Spec」描述物品、镜头与路线，一次调用重建整个场景并播放。
+
+```javascript
+GridBuilder.manifest()            // 能力清单：物品目录 / 镜头预设 / Spec 规范
+GridBuilder.build(spec)           // 清空 → 重建 → 自动播放，返回含 skipped 的报告
+GridBuilder.describe()            // 导出当前场景为 spec（可回灌 build）
+GridBuilder.advance(0.5)          // 确定性推进游览 0.5 秒（逐帧抓图用）
+GridBuilder.pause() / resume()    // 暂停 / 恢复 rAF 自动推进
+```
+
+```json
+{
+  "items": [
+    { "id": "tower_canton", "grid": [20, 20] },
+    { "pattern": "ring", "id": "street_lamp", "center": [20, 20], "radius": 8, "count": 12 },
+    { "pattern": "row", "id": "office", "from": [8, 10], "to": [8, 30], "step": 4 }
+  ],
+  "camera": { "mode": "overview", "heightTiles": 8, "distanceTiles": 6, "lookAheadTiles": 7 },
+  "route": [{ "grid": [4, 4] }, { "grid": [35, 35], "camera": { "mode": "closeup" } }],
+  "play": { "autoplay": true, "loop": false, "speed": 9 }
+}
+```
+
+- 坐标：`grid:[gx,gz]` 取值 `0~39`，中心是 `[20,20]`；备用 `pos:[x,z]` 为世界坐标（±40）
+- `pattern`：`row` / `grid` / `ring` 三种批量摆放
+- 镜头参数单位是「**格**」不是世界单位
+- `build()` 返回 `report.skipped`，逐条说明哪些条目没落地及原因，不静默失败
+
+### 页面内使用
+
+点物品栏的 **AI 模式** 按钮：
+
+1. **复制 AI 提示词** —— 含 41 物品清单 + Spec 规范 + 收尾占位，粘给任意 AI
+2. AI 返回一份 JSON Spec
+3. 粘进输入框 → **生成并播放**
+
+也可以 **导出当前场景** 把手工搭的场景转成 JSON，交给 AI 继续改。
+
+### 离线批处理
+
+能力库 `至关重要` 中的 `grid-builder-scene` 提供驱动脚本，可离线跑 Spec 并逐帧抓图：
+
+```bash
+node drive.mjs --spec scene.json --frames 8 --duration 24 --out ./shots
+```
 
 ## 天空系统
 
@@ -97,7 +147,8 @@ js/interaction.js     物品栏、射线拾取、放置/擦除、堆叠、选中
 js/tour.js            路线数据与游览调度
 js/camera.js          导览相机系统（预设/覆盖/平滑运动/调试）
 js/storage.js         序列化与旧数据兼容
-js/ui.js              提示 Toast
+js/ui.js              提示 Toast 与面板折叠
+js/api.js             脚本化 API（window.GridBuilder）+ AI 模式面板
 js/main.js            启动入口
 3d-grid-view.html     早期 CSS 3D 原型页
 ```

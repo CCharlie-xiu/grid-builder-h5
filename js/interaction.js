@@ -34,11 +34,14 @@ function renderPalette() {
     // 常用工具（选择 / 擦除）
     TOOLS.forEach(tool => appendPaletteButton(container, tool));
 
-    // AI 助手
+    // AI 模式：打开面板（复制提示词 → AI 写 Spec → 粘回来生成）
     const ai = document.createElement('button');
     ai.className = 'assistant-btn';
-    ai.innerHTML = '<span class="ai-dot"></span>问问 AI';
-    ai.addEventListener('click', () => showToast('AI 助手即将上线，敬请期待'));
+    ai.innerHTML = '<span class="ai-dot"></span>AI 模式';
+    ai.addEventListener('click', () => {
+        if (typeof openAiPanel === 'function') openAiPanel();
+        else showToast('AI 面板未加载');
+    });
     container.appendChild(ai);
 
     // 分类过滤后的物品

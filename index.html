@@ -223,6 +223,50 @@
         </div>
     </div>
 
+    <!-- AI 模式面板：把 AI 写的场景 Spec 粘回来执行 -->
+    <div id="ai-panel" class="absolute inset-0 z-40 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl w-[600px] max-w-[calc(100vw-3rem)] p-5 shadow-2xl pointer-events-auto">
+            <div class="flex items-center gap-2.5 mb-3">
+                <span class="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-wand-magic-sparkles text-cyan-300 text-xs"></i>
+                </span>
+                <span class="text-sm font-bold text-slate-100">AI 模式</span>
+                <span class="text-[10px] text-slate-500">用描述生成场景与镜头轨迹</span>
+                <button id="ai-close" class="ml-auto w-6 h-6 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mb-3">
+                复制提示词交给任意 AI，让它按你的描述写一份<b class="text-slate-200">场景 Spec</b>，粘回下面点生成即可。
+                页面上已暴露 <code class="text-cyan-300">window.GridBuilder</code>，也可由脚本直接驱动。
+            </p>
+
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button id="ai-copy-prompt" class="sel-btn">
+                    <i class="fa-solid fa-clipboard"></i>复制 AI 提示词
+                </button>
+                <button id="ai-copy-scene" class="sel-btn">
+                    <i class="fa-solid fa-file-export"></i>导出当前场景
+                </button>
+                <button id="ai-copy-spec" class="sel-btn">
+                    <i class="fa-solid fa-book"></i>复制 Spec 规范
+                </button>
+            </div>
+
+            <textarea id="ai-spec" rows="9" spellcheck="false"
+                class="w-full rounded-xl bg-slate-950/70 border border-slate-700/70 focus:border-cyan-500/60 outline-none p-3 text-[11px] leading-relaxed text-slate-200 font-mono resize-y"
+                placeholder='{&#10;  "items": [{ "id": "tower_canton", "grid": [20, 20] }],&#10;  "camera": { "mode": "overview", "heightTiles": 8 },&#10;  "route": [{ "grid": [4, 4] }, { "grid": [35, 35] }]&#10;}'></textarea>
+
+            <div class="flex items-center gap-2 mt-3">
+                <button id="ai-generate" class="tour-primary-btn !flex-none px-5">
+                    <i class="fa-solid fa-play text-[11px]"></i>生成并播放
+                </button>
+                <span id="ai-msg" class="text-[11px] text-slate-400"></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="absolute top-24 left-1/2 -translate-x-1/2 glass-panel px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 transform -translate-y-4">
         提示信息
@@ -239,6 +283,7 @@
     <script src="./js/camera.js"></script>
     <script src="./js/storage.js"></script>
     <script src="./js/ui.js"></script>
+    <script src="./js/api.js"></script>
     <script src="./js/main.js"></script>
 </body>
 </html>
