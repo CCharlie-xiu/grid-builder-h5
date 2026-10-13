@@ -46,7 +46,9 @@ python3 -m http.server 8899
 GridBuilder.manifest()            // 能力清单：物品目录 / 镜头预设 / Spec 规范
 GridBuilder.build(spec)           // 清空 → 重建 → 自动播放，返回含 skipped 的报告
 GridBuilder.describe()            // 导出当前场景为 spec（可回灌 build）
-GridBuilder.advance(0.5)          // 确定性推进游览 0.5 秒（逐帧抓图用）
+GridBuilder.preview(i)            // 跳到第 i 个途经点的精确镜头姿态（分镜抓帧）
+GridBuilder.clean(true)           // 成片模式：隐藏界面与编辑辅助
+GridBuilder.advance(0.5)          // 确定性推进游览 0.5 秒（逐帧抓图 / 出片）
 GridBuilder.pause() / resume()    // 暂停 / 恢复 rAF 自动推进
 ```
 
@@ -80,11 +82,17 @@ GridBuilder.pause() / resume()    // 暂停 / 恢复 rAF 自动推进
 
 ### 离线批处理
 
-能力库 `至关重要` 中的 `grid-builder-scene` 提供驱动脚本，可离线跑 Spec 并逐帧抓图：
+能力库 `至关重要` 中的 `grid-builder-scene` 提供驱动脚本，可离线跑 Spec 并出片：
 
 ```bash
-node drive.mjs --spec scene.json --frames 8 --duration 24 --out ./shots
+node drive.mjs --spec scene.json --clean --video ./out.mp4    # 出片（推荐）
+node drive.mjs --spec scene.json --beats --clean --out ./shots  # 分镜：每点一张
 ```
+
+`--clean` 是**成片模式**：隐藏全部界面层与编辑辅助（路线连线、途经点标记、选中高亮），
+只留干净的 3D 画面。页面上按 **H** 键也能手动切换界面显隐，用来预览成片效果。
+
+驱动脚本另有 `--fps`（出片帧率）、`--hold`（尾帧停留）、`--keep-frames`（保留 PNG 序列）。
 
 ## 天空系统
 

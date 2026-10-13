@@ -6,6 +6,11 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* ===== 成片模式：隐藏全部界面层，只留 3D 画面 ===== */
+body.clean-mode .ui-layer {
+    display: none !important;
+}
+
 /* ===== 物品栏 ===== */
 .palette-btn {
     display: flex;

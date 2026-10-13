@@ -22,7 +22,7 @@
     <div id="canvas-container"></div>
 
     <!-- 左上：镜头设置（默认折叠） -->
-    <div class="absolute top-6 left-6 z-20 w-60">
+    <div class="ui-layer absolute top-6 left-6 z-20 w-60">
         <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
             <button id="btn-cam-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
                 <span class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-400/30 flex items-center justify-center shrink-0">
@@ -92,7 +92,7 @@
     </div>
 
     <!-- 右上：全局操作 -->
-    <div class="absolute top-6 right-6 z-10">
+    <div class="ui-layer absolute top-6 right-6 z-10">
         <div class="glass-panel p-2 rounded-2xl flex items-center gap-2 pointer-events-auto shadow-2xl">
             <button id="btn-save-scene" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium text-sm transition-all flex items-center gap-2">
                 <i class="fa-solid fa-floppy-disk"></i> 保存场景
@@ -110,7 +110,7 @@
     </div>
 
     <!-- 左下：路线游览（上移，避开底部物品栏） -->
-    <div class="absolute left-6 bottom-36 z-10 w-60">
+    <div class="ui-layer absolute left-6 bottom-36 z-10 w-60">
         <!-- 路线游览面板 -->
         <div class="glass-panel rounded-2xl pointer-events-auto shadow-2xl overflow-hidden">
             <button id="btn-route-collapse" class="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-white/5 transition-colors">
@@ -146,7 +146,7 @@
     </div>
 
     <!-- 镜头调试读数 -->
-    <div id="debug-panel" class="absolute top-24 right-6 glass-panel px-4 py-3 rounded-xl z-10 text-[11px] text-slate-300 space-y-1 shadow-xl hidden">
+    <div id="debug-panel" class="ui-layer absolute top-24 right-6 glass-panel px-4 py-3 rounded-xl z-10 text-[11px] text-slate-300 space-y-1 shadow-xl hidden">
         <div>镜头模式 <span id="dbg-mode" class="text-violet-300 font-semibold">—</span></div>
         <div>相机位置 <span id="dbg-pos" class="text-cyan-300">—</span></div>
         <div>注视目标 <span id="dbg-target" class="text-cyan-300">—</span></div>
@@ -155,7 +155,7 @@
     </div>
 
     <!-- 选中物体操作条（选择工具下点击已放置物体出现） -->
-    <div id="selection-bar" class="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 hidden">
+    <div id="selection-bar" class="ui-layer absolute bottom-44 left-1/2 -translate-x-1/2 z-20 hidden">
         <div class="glass-panel rounded-2xl px-3 py-2 flex items-center gap-2 shadow-2xl">
             <span class="flex items-center gap-2 pr-2.5 border-r border-white/10">
                 <i class="fa-solid fa-arrow-pointer text-amber-300 text-xs"></i>
@@ -181,7 +181,7 @@
     </div>
 
     <!-- 分类页签 + 物品栏（底部居中） -->
-    <footer class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-2 max-w-[calc(100vw-3rem)]">
+    <footer class="ui-layer absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-2 max-w-[calc(100vw-3rem)]">
         <!-- 分类页签 -->
         <div class="glass-panel rounded-full px-2 py-1 flex items-center gap-1 pointer-events-auto shadow-xl">
             <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 hidden sm:block">分类</span>
@@ -202,7 +202,7 @@
     </footer>
 
     <!-- 右下：操作说明（默认折叠；上移到物品栏之上，避免遮挡） -->
-    <div class="absolute bottom-36 right-6 z-10 w-52 hidden sm:block">
+    <div class="ui-layer absolute bottom-36 right-6 z-10 w-52 hidden sm:block">
         <div class="glass-panel rounded-xl pointer-events-auto shadow-xl overflow-hidden">
             <button id="btn-hint-collapse" class="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/5 transition-colors">
                 <span class="w-6 h-6 rounded-lg bg-slate-500/15 border border-slate-400/25 flex items-center justify-center shrink-0">
@@ -224,7 +224,7 @@
     </div>
 
     <!-- AI 模式面板：把 AI 写的场景 Spec 粘回来执行 -->
-    <div id="ai-panel" class="absolute inset-0 z-40 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+    <div id="ai-panel" class="ui-layer absolute inset-0 z-40 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm">
         <div class="glass-panel rounded-2xl w-[600px] max-w-[calc(100vw-3rem)] p-5 shadow-2xl pointer-events-auto">
             <div class="flex items-center gap-2.5 mb-3">
                 <span class="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
@@ -268,7 +268,7 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="absolute top-24 left-1/2 -translate-x-1/2 glass-panel px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 transform -translate-y-4">
+    <div id="toast" class="ui-layer absolute top-24 left-1/2 -translate-x-1/2 glass-panel px-5 py-2.5 rounded-xl text-sm font-medium text-white shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 transform -translate-y-4">
         提示信息
     </div>
 

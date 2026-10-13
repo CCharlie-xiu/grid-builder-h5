@@ -18,6 +18,7 @@ const API_VERSION = '1.0.0';
 // 脚本控制状态
 const apiState = {
     paused: false,          // 暂停 rAF 自动推进（抓帧时用）
+    advanceAcc: 0,          // advance() 的小数累加器，保证总时长精确
     lastReport: null
 };
 
@@ -266,6 +267,7 @@ function apiBuild(spec, opt) {
     const shouldPlay = opt.autoplay !== undefined ? !!opt.autoplay : (play.autoplay !== false);
     if (shouldPlay && waypoints.length >= 2) {
         apiState.paused = false;
+        apiState.advanceAcc = 0;
         startTour();
         report.playing = tourActive;
     } else if (shouldPlay) {
@@ -446,6 +448,7 @@ function apiSetRoute(points) {
 
 function apiPlay() {
     apiState.paused = false;
+    apiState.advanceAcc = 0;
     startTour();
     return { playing: tourActive };
 }
@@ -459,12 +462,17 @@ function apiPause() { apiState.paused = true; return { paused: true }; }
 function apiResume() { apiState.paused = false; return { paused: false }; }
 
 /**
- * 确定性推进游览（逐帧抓图用）
- * 直接按固定步长驱动导览相机，结果与帧率无关、可复现
+ * 确定性推进游览（逐帧抓图 / 录制用）
+ * 直接按固定步长驱动导览相机，结果与帧率无关、可复现；
+ * 内部按小数累加，保证「每次推进 1/fps 秒」的总时长精确
  */
 function apiAdvance(seconds) {
     if (!tourActive) return { ok: false, reason: '游览未开始' };
-    const steps = Math.max(1, Math.round((seconds || 0) / FIXED_DT));
+    apiState.advanceAcc = (apiState.advanceAcc || 0) + Math.max(0, seconds || 0);
+    let steps = Math.floor(apiState.advanceAcc / FIXED_DT);
+    if (steps < 1) { renderNow(); return { ok: true, finished: false, progress: tourState.progress }; }
+    apiState.advanceAcc -= steps * FIXED_DT;
+
     let finished = false;
     for (let i = 0; i < steps; i++) {
         if (!tourActive) break;
@@ -479,6 +487,39 @@ function apiAdvance(seconds) {
         playing: tourActive
     };
 }
+
+// ============ 成片模式（隐藏界面，只留画面） ============
+
+/**
+ * 成片模式：隐藏全部界面层与编辑辅助（路线连线、途经点标记、选中高亮）
+ * 录制或抓帧前调用，得到干净的 3D 画面
+ */
+function apiClean(clean) {
+    const on = clean !== false;
+    document.body.classList.toggle('clean-mode', on);
+
+    // 编辑辅助不是画面内容，成片里不出现
+    if (typeof routeLine !== 'undefined' && routeLine) routeLine.visible = !on;
+    if (typeof waypoints !== 'undefined') {
+        waypoints.forEach(w => { if (w.marker) w.marker.visible = !on; });
+    }
+    const keepSel = !on && !!selectedItem;
+    if (selectionHelper) selectionHelper.visible = keepSel;
+    if (selectionFootprint) selectionFootprint.visible = keepSel;
+    if (selectionFill) selectionFill.visible = keepSel;
+
+    renderNow();
+    return { clean: on };
+}
+
+// H 键切换界面显隐（人工预览成片效果）
+window.addEventListener('keydown', (e) => {
+    if (e.key !== 'h' && e.key !== 'H') return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    const on = !document.body.classList.contains('clean-mode');
+    apiClean(on);
+});
 
 // ============ 视角 / 渲染（抓帧用） ============
 
@@ -721,6 +762,9 @@ window.GridBuilder = {
 
     setView: apiSetView,
     preview: apiPreview,
+    clean: apiClean,
+    hideUI: () => apiClean(true),
+    showUI: () => apiClean(false),
     renderNow,
     grid: { worldOf: apiWorldOf, gridOf: apiGridOf, size: gridSize, tileSize },
 
